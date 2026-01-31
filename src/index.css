@@ -8,11 +8,12 @@
   :root {
     /* Brand Colors */
     --brand-pink: 342 76% 60%;
-    --brand-gold: 43 65% 52%;
+    --brand-gold: 43 65% 42%; /* Darkened for better readability */
     --brand-cream: 0 20% 99%;
     --brand-dark: 340 35% 10%;
     --brand-blush: 350 30% 95%;
     --brand-rose: 350 40% 90%;
+    --brand-gold: 45 100% 50%;
     
     /* Semantic Colors */
     --background: 0 20% 99%;
@@ -33,7 +34,7 @@
     --muted: 350 20% 96%;
     --muted-foreground: 340 20% 40%;
     
-    --accent: 43 65% 52%;
+    --accent: 45 100% 50%;
     --accent-foreground: 340 35% 10%;
     
     --destructive: 0 84% 60%;
@@ -247,6 +248,20 @@
   .star-empty {
     @apply text-muted;
   }
+  .relative.flex.items-center.select-none.touch-none.w-full.h-5 span:first-child {
+    background-color: #fce7aa !important; /* Light Yellow track */
+}
+/* The active range bar */
+.relative.flex.items-center.select-none.touch-none.w-full.h-5 [data-orientation="horizontal"] span {
+    background-color: #ffc107 !important; /* Solid Logo Yellow */
+}
+
+/* The draggable knob */
+.relative.flex.items-center.select-none.touch-none.w-full.h-5 [role="slider"] {
+    background-color: #ffc107 !important;
+    border: 2px solid white !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
+}
 }
 
 @layer utilities {

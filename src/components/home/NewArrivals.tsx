@@ -32,9 +32,7 @@ const NewArrivals = () => {
           className="flex flex-col md:flex-row md:items-end md:justify-between mb-8"
         >
           <div>
-            <span className="text-accent font-body text-sm tracking-[0.3em] uppercase">
-              Fresh Picks
-            </span>
+            
             <h2 className="heading-section mt-2">New Arrivals</h2>
             <p className="text-muted-foreground mt-2 max-w-md">
               Be the first to shop our latest designs, fresh from our artisans' workshops.

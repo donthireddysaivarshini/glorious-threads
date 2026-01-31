@@ -1,126 +1,94 @@
-import { motion } from 'framer-motion';
-import { Award, Heart, Users, Truck } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
-import founderImage from '@/assets/founder.jpg';
+// Mock/Asset imports
+import founder1 from '@/assets/founder1.jpeg';
+import founder2 from '@/assets/founder2.jpeg';
+import founder3 from '@/assets/founder3.jpeg';
 
-const values = [
-  {
-    icon: Award,
-    title: 'Premium Quality',
-    description: 'Every piece is carefully crafted with the finest fabrics.',
-  },
-  {
-    icon: Heart,
-    title: 'Authentic Designs',
-    description: 'Traditional craftsmanship meets contemporary elegance.',
-  },
-  {
-    icon: Users,
-    title: '111K+ Community',
-    description: 'Join our family of style-conscious customers.',
-  },
-  {
-    icon: Truck,
-    title: 'Fast Shipping',
-    description: 'Pan-India delivery within 4-6 business days.',
-  },
-];
+const sliderImages = [founder1, founder2, founder3];
 
 const BrandStory = () => {
-  return (
-    <section className="section-padding bg-background overflow-hidden">
-      <div className="container-luxury mx-auto">
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-          {/* Image */}
-          <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-            className="relative"
-          >
-            <div className="relative aspect-[3/4] rounded-2xl overflow-hidden">
-              <img
-                src={founderImage}
-                alt="Divya - Founder of Glorious Threads"
-                className="w-full h-full object-cover"
-              />
-            </div>
-            {/* Decorative Frame */}
-            <div className="absolute -top-4 -left-4 w-full h-full border-2 border-accent rounded-2xl -z-10" />
-            
-            {/* Floating Badge */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.5 }}
-              className="absolute -bottom-6 -right-6 bg-white rounded-2xl shadow-luxury p-6"
-            >
-              <span className="block text-3xl font-display font-bold text-primary">5+</span>
-              <span className="text-sm text-muted-foreground">Years of Love</span>
-            </motion.div>
-          </motion.div>
+  const [current, setCurrent] = useState(0);
 
-          {/* Content */}
+  // Decreased timer to 3000ms (3 seconds) for a snappier feel
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrent((prev) => (prev + 1) % sliderImages.length);
+    }, 3000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <section className="section-padding bg-background overflow-hidden border-t border-border/50">
+      <div className="container-luxury mx-auto px-4">
+        <div className="grid lg:grid-cols-2 gap-16 lg:gap-32 items-center">
+          
+          {/* LEFT SIDE: AUTO-SLIDING IMAGES WITH CROSS-FADE */}
+          <div className="relative group">
+            <div className="relative aspect-[4/5] rounded-2xl overflow-hidden shadow-2xl z-10 border-[8px] border-white bg-gray-100">
+              <AnimatePresence mode="popLayout"> {/* Faster, overlapping transition */}
+                <motion.img
+                  key={current}
+                  src={sliderImages[current]}
+                  // Image comes from center and fades in simultaneously
+                  initial={{ opacity: 0, scale: 1.05 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ 
+                    duration: 0.8, // Faster transition
+                    ease: [0.4, 0, 0.2, 1] // Custom cubic-bezier for a "boutique" feel
+                  }}
+                  className="absolute inset-0 w-full h-full object-cover"
+                  alt="Founder"
+                />
+              </AnimatePresence>
+            </div>
+            
+            {/* Matte Gold Decorative Frame Backing */}
+            <div className="absolute -top-6 -left-6 w-full h-full border border-accent/30 rounded-2xl -z-10" />
+            
+            {/* Floating Experience Badge */}
+            <motion.div 
+              initial={{ scale: 0.8, opacity: 0 }}
+              whileInView={{ scale: 1, opacity: 1 }}
+              className="absolute -bottom-8 -right-4 bg-accent text-white px-8 py-5 rounded-sm shadow-xl z-20 hidden md:block"
+            >
+              <p className="text-4xl font-display font-light leading-none">05</p>
+              <p className="text-[9px] font-bold uppercase tracking-[0.3em] mt-2 opacity-90 text-center">Years</p>
+            </motion.div>
+          </div>
+
+          {/* RIGHT SIDE: MINIMALIST WARM INFO */}
           <motion.div
-            initial={{ opacity: 0, x: 50 }}
+            initial={{ opacity: 0, x: 20 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
+            className="flex flex-col text-center lg:text-left"
           >
-            <span className="text-accent font-body text-sm tracking-[0.3em] uppercase">
-              Our Story
-            </span>
-            <h2 className="heading-section mt-2 mb-6">
-              Crafted with Love
-              <br />
-              <span className="italic text-primary">by Divya</span>
+            <span className="tagline-gold">The Essence of GTD</span>
+            
+            <h2 className="font-display text-2xl md:text-2xl font-bold text-foreground leading-[1.1] mb-8">
+              Woven with Passion, <br />
+              <span className="italic text-primary font-serif font-medium tracking-tight">Curated for Elegance.</span>
             </h2>
             
-            <div className="space-y-4 text-muted-foreground text-body">
-              <p>
-                What started as a passion for preserving India's rich textile heritage has 
-                blossomed into a beloved boutique that dresses women for their most special moments.
+            <div className="space-y-8 max-w-xl">
+              <p className="text-foreground/80 text-xl md:text-xl font-small leading-relaxed italic">
+                "Every design is a tribute to the timeless beauty of the Indian woman."
               </p>
-              <p>
-                At Glorious Threads, we believe every woman deserves to feel like royalty. 
-                Each piece in our collection is handpicked to celebrate Indian craftsmanship 
-                while embracing modern sensibilities.
-              </p>
-              <p>
-                From our workshop in Mumbai, we work directly with artisan communities across 
-                India, ensuring fair wages and keeping traditional weaving techniques alive.
-              </p>
-            </div>
+              
+              <div className="h-px w-20 bg-accent/40 mx-auto lg:mx-0" />
 
-            {/* Gold Divider */}
-            <div className="gold-divider my-8" />
-
-            {/* Value Props */}
-            <div className="grid grid-cols-2 gap-6">
-              {values.map((value, index) => (
-                <motion.div
-                  key={value.title}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                  className="flex gap-3"
-                >
-                  <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center flex-shrink-0">
-                    <value.icon className="w-5 h-5 text-accent" />
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-foreground">{value.title}</h4>
-                    <p className="text-sm text-muted-foreground mt-0.5">
-                      {value.description}
-                    </p>
-                  </div>
-                </motion.div>
-              ))}
+              <p className="text-muted-foreground text-base md:text-lg leading-relaxed font-light">
+                Founded by Divya, Glorious Threads is a sanctuary for those who appreciate 
+                the soul of a handwoven saree and the grandeur of a handcrafted lehenga. 
+                We bring India’s heritage into your wardrobe with grace.
+              </p>
             </div>
           </motion.div>
+
         </div>
       </div>
     </section>

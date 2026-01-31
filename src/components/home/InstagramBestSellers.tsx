@@ -1,111 +1,86 @@
+import { useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Heart, MessageCircle, ArrowRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { getInstagramPicks, formatPrice } from '@/data/products';
+import ProductCard from '@/components/product/ProductCard';
+import { getBestSellers } from '@/data/products';
 
-import productSaree1 from '@/assets/product-saree-1.jpg';
-import productKurta1 from '@/assets/product-kurta-1.jpg';
-import productLehenga1 from '@/assets/product-lehenga-1.jpg';
+const BestSellers = () => {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const products = getBestSellers();
 
-const productImages = [productSaree1, productKurta1, productLehenga1, productSaree1];
-
-const InstagramBestSellers = () => {
-  const products = getInstagramPicks().slice(0, 4);
-
-  const mockEngagement = [
-    { likes: '2.4K', comments: '156' },
-    { likes: '1.8K', comments: '89' },
-    { likes: '3.1K', comments: '234' },
-    { likes: '2.1K', comments: '178' },
-  ];
+  const scroll = (direction: 'left' | 'right') => {
+    if (scrollRef.current) {
+      const scrollAmount = 320;
+      scrollRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth',
+      });
+    }
+  };
 
   return (
     <section className="section-padding bg-background">
       <div className="container-luxury mx-auto">
-        {/* Section Header */}
+        {/* Header - Exact match to New Arrivals */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="text-center mb-12"
+          className="flex flex-col md:flex-row md:items-end md:justify-between mb-8"
         >
-          <span className="text-accent font-body text-sm tracking-[0.3em] uppercase">
-            Community Favorites
-          </span>
-          <h2 className="heading-section mt-2">As Seen on Instagram</h2>
-          <p className="text-muted-foreground mt-3 max-w-lg mx-auto">
-            The styles our community loves most. Real customers, real style inspiration.
-          </p>
+          <div>
+            
+            <h2 className="heading-section mt-2">Best Sellers</h2>
+            <p className="text-muted-foreground mt-2 max-w-md">
+              Our community's favorites. The absolute best of Indian craftsmanship.
+            </p>
+          </div>
+          
+          <div className="flex items-center gap-4 mt-4 md:mt-0">
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                className="rounded-full border-border hover:border-accent hover:text-accent"
+                onClick={() => scroll('left')}
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="rounded-full border-border hover:border-accent hover:text-accent"
+                onClick={() => scroll('right')}
+              >
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+            <Link to="/collections/best-sellers" className="hidden md:block">
+              <Button variant="ghost" className="group text-primary hover:text-primary">
+                View All
+                <ArrowRight className="ml-1 w-4 h-4 transition-transform group-hover:translate-x-1" />
+              </Button>
+            </Link>
+          </div>
         </motion.div>
 
-        {/* Products Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+        {/* Carousel */}
+        <div
+          ref={scrollRef}
+          className="flex gap-4 md:gap-6 overflow-x-auto scrollbar-hide pb-4 -mx-4 px-4"
+        >
           {products.map((product, index) => (
-            <motion.div
-              key={product.id}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-              className="group"
-            >
-              <Link to={`/product/${product.slug}`}>
-                <div className="relative aspect-square rounded-lg overflow-hidden bg-secondary mb-3">
-                  <img
-                    src={productImages[index]}
-                    alt={product.name}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                  
-                  {/* Instagram Badge */}
-                  <div className="absolute top-3 left-3 px-2 py-1 bg-gradient-to-r from-purple-600 to-pink-500 rounded-full">
-                    <span className="text-xs text-white font-medium">Instagram Favorite</span>
-                  </div>
-                  
-                  {/* Engagement Stats */}
-                  <div className="absolute bottom-3 left-3 right-3 flex items-center gap-3">
-                    <div className="flex items-center gap-1 text-white text-sm">
-                      <Heart className="w-4 h-4 fill-white" />
-                      <span>{mockEngagement[index].likes}</span>
-                    </div>
-                    <div className="flex items-center gap-1 text-white text-sm">
-                      <MessageCircle className="w-4 h-4" />
-                      <span>{mockEngagement[index].comments}</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <h3 className="font-body text-sm font-medium text-foreground line-clamp-1 group-hover:text-primary transition-colors">
-                  {product.name}
-                </h3>
-                <p className="text-sm font-semibold text-foreground mt-1">
-                  {formatPrice(product.price)}
-                </p>
-              </Link>
-            </motion.div>
+            <div key={product.id} className="flex-shrink-0 w-64 md:w-72">
+              <ProductCard product={product} index={index} />
+            </div>
           ))}
         </div>
-
-        {/* CTA */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6, delay: 0.4 }}
-          className="text-center mt-10"
-        >
-          <Link to="/collections/instagram-picks">
-            <Button variant="outline" className="group border-accent text-accent hover:bg-accent hover:text-white">
-              Shop All Instagram Picks
-              <ArrowRight className="ml-2 w-4 h-4 transition-transform group-hover:translate-x-1" />
-            </Button>
-          </Link>
-        </motion.div>
       </div>
     </section>
   );
 };
 
-export default InstagramBestSellers;
+export default BestSellers;

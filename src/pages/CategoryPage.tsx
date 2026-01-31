@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ChevronRight, Filter, SlidersHorizontal, Grid3X3, LayoutGrid, X } from 'lucide-react';
+import { ChevronRight, SlidersHorizontal } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import ProductCard from '@/components/product/ProductCard';
@@ -18,370 +18,163 @@ import {
 } from '@/components/ui/select';
 import { products, categories, formatPrice } from '@/data/products';
 
-import categorySarees from '@/assets/category-sarees.jpg';
-import categoryLehengas from '@/assets/category-lehengas.jpg';
-import categoryKurtas from '@/assets/category-kurtas.jpg';
-import categoryMens from '@/assets/category-mens.jpg';
-import categoryKids from '@/assets/category-kids.jpg';
-import categoryJewellery from '@/assets/category-jewellery.jpg';
-
-const categoryBanners: Record<string, string> = {
-  sarees: categorySarees,
-  lehengas: categoryLehengas,
-  'kurta-sets': categoryKurtas,
-  'mens-ethnic': categoryMens,
-  kids: categoryKids,
-  jewellery: categoryJewellery,
-};
-
-const subcategoryFilters: Record<string, string[]> = {
-  sarees: ['All', 'Silk Sarees', 'Cotton Sarees', 'Party Wear', 'With Blouse'],
-  lehengas: ['All', 'Bridal', 'Party Wear', 'Festive'],
-  'kurta-sets': ['All', 'Anarkali', 'Straight Cut', 'A-Line'],
-  'mens-ethnic': ['All', 'Kurtas', 'Sherwanis', 'Nehru Jackets'],
-  kids: ['All', 'Girls', 'Boys'],
-  jewellery: ['All', 'Traditional', 'Kundan', 'Temple'],
-};
-
 const sizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Free Size'];
-const colors = [
-  { name: 'Pink', hex: '#FF69B4' },
-  { name: 'Red', hex: '#DC143C' },
-  { name: 'Blue', hex: '#4169E1' },
-  { name: 'Green', hex: '#228B22' },
-  { name: 'Gold', hex: '#D4AF37' },
-  { name: 'Black', hex: '#000000' },
-  { name: 'White', hex: '#FFFFFF' },
-];
 
 const CategoryPage = () => {
-  const { category = 'sarees' } = useParams();
-  const [priceRange, setPriceRange] = useState([500, 30000]);
+  const { category, collection } = useParams();
+  const [maxPrice, setMaxPrice] = useState(50000);
   const [selectedSubcategory, setSelectedSubcategory] = useState('All');
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
-  const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState('newest');
-  const [viewMode, setViewMode] = useState<'grid' | 'large'>('grid');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
-  const categoryData = categories.find((c) => c.slug === category);
-  const categoryName = categoryData?.name || category.charAt(0).toUpperCase() + category.slice(1).replace('-', ' ');
-  const bannerImage = categoryBanners[category] || categorySarees;
-  const subcategories = subcategoryFilters[category] || ['All'];
+  const isCollection = Boolean(collection);
+  const pageTitle = isCollection 
+    ? (collection === 'best-sellers' ? 'Best Sellers' : 'Watch & Buy')
+    : categories.find(c => c.slug === category)?.name || 'Products';
 
-  // Filter products
-  let filteredProducts = products.filter((p) => {
-    // Category filter
-    const categoryMatch = p.category === category || 
-      (category === 'women' && ['sarees', 'lehengas', 'kurta-sets'].includes(p.category));
-    
-    // Price filter
-    const priceMatch = p.price >= priceRange[0] && p.price <= priceRange[1];
-    
-    // Subcategory filter
-    const subcategoryMatch = selectedSubcategory === 'All' || p.subcategory === selectedSubcategory;
-    
-    return categoryMatch && priceMatch && subcategoryMatch;
-  });
+  const filteredProducts = useMemo(() => {
+    let result = products.filter((p) => {
+      if (collection === 'best-sellers') {
+        if (p.badge !== 'bestseller') return false;
+      } else if (collection === 'watch-and-buy' || collection === 'instagram-picks') {
+        if (!p.isInstagramPick) return false;
+      } else if (!isCollection && category && p.category !== category) {
+        return false;
+      }
 
-  // Sort products
-  filteredProducts = [...filteredProducts].sort((a, b) => {
-    switch (sortBy) {
-      case 'price-low':
-        return a.price - b.price;
-      case 'price-high':
-        return b.price - a.price;
-      case 'popularity':
-        return b.reviewCount - a.reviewCount;
-      default:
-        return 0;
-    }
-  });
+      if (p.price > maxPrice) return false;
+      if (selectedSubcategory !== 'All' && p.subcategory !== selectedSubcategory) return false;
+      if (selectedSizes.length > 0 && !p.sizes.some(s => selectedSizes.includes(s))) return false;
+      
+      return true;
+    });
+
+    if (sortBy === 'price-low') result.sort((a, b) => a.price - b.price);
+    if (sortBy === 'price-high') result.sort((a, b) => b.price - a.price);
+    
+    return result;
+  }, [category, collection, maxPrice, selectedSubcategory, selectedSizes, isCollection, sortBy]);
 
   const FilterSidebar = () => (
-    <div className="space-y-8">
-      {/* Price Range */}
+    <div className="space-y-10">
       <div>
-        <h4 className="font-display font-medium mb-4">Price Range</h4>
+        <h4 className="font-bold text-black mb-6 uppercase text-xs tracking-widest">Budget Range</h4>
         <Slider
-          value={priceRange}
-          onValueChange={setPriceRange}
+          value={[maxPrice]}
+          onValueChange={(val) => setMaxPrice(val[0])}
           min={500}
-          max={30000}
+          max={50000}
           step={500}
           className="mb-4"
         />
-        <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <span>{formatPrice(priceRange[0])}</span>
-          <span>{formatPrice(priceRange[1])}</span>
+        <div className="flex items-center justify-between font-bold text-[10px] text-black uppercase">
+          <span>Min: ₹500</span>
+          <span className="text-accent">Up to {formatPrice(maxPrice)}</span>
         </div>
       </div>
 
-      {/* Size */}
       <div>
-        <h4 className="font-display font-medium mb-4">Size</h4>
-        <div className="space-y-3">
+        <h4 className="font-bold text-black mb-4 uppercase text-xs tracking-widest">Select Size</h4>
+        <div className="grid grid-cols-2 gap-2">
           {sizes.map((size) => (
-            <label key={size} className="flex items-center gap-3 cursor-pointer">
+            <label key={size} className="flex items-center gap-2 cursor-pointer group">
               <Checkbox
+                className="border-gray-300 data-[state=checked]:bg-black data-[state=checked]:border-black"
                 checked={selectedSizes.includes(size)}
                 onCheckedChange={(checked) => {
-                  if (checked) {
-                    setSelectedSizes([...selectedSizes, size]);
-                  } else {
-                    setSelectedSizes(selectedSizes.filter((s) => s !== size));
-                  }
+                  checked 
+                    ? setSelectedSizes([...selectedSizes, size])
+                    : setSelectedSizes(selectedSizes.filter(s => s !== size))
                 }}
               />
-              <span className="text-sm">{size}</span>
+              <span className="text-xs font-bold text-gray-600 group-hover:text-black transition-colors">{size}</span>
             </label>
           ))}
         </div>
       </div>
 
-      {/* Color */}
-      <div>
-        <h4 className="font-display font-medium mb-4">Color</h4>
-        <div className="flex flex-wrap gap-2">
-          {colors.map((color) => (
-            <button
-              key={color.name}
-              onClick={() => {
-                if (selectedColors.includes(color.name)) {
-                  setSelectedColors(selectedColors.filter((c) => c !== color.name));
-                } else {
-                  setSelectedColors([...selectedColors, color.name]);
-                }
-              }}
-              className={`w-8 h-8 rounded-full border-2 transition-all ${
-                selectedColors.includes(color.name)
-                  ? 'border-accent scale-110'
-                  : 'border-border'
-              }`}
-              style={{ backgroundColor: color.hex }}
-              title={color.name}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Clear Filters */}
       <Button
-        variant="outline"
-        className="w-full"
+        variant="ghost"
+        className="w-full text-black font-bold hover:bg-gray-100 text-xs uppercase tracking-widest border border-black"
         onClick={() => {
-          setPriceRange([500, 30000]);
+          setMaxPrice(50000);
           setSelectedSizes([]);
-          setSelectedColors([]);
           setSelectedSubcategory('All');
         }}
       >
-        Clear All Filters
+        Clear Filters
       </Button>
     </div>
   );
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-white">
       <Header />
-      
-      <main className="pt-20 pb-20 lg:pb-8">
-        {/* Category Banner */}
-        <div className="relative h-48 md:h-64 overflow-hidden">
-          <img
-            src={bannerImage}
-            alt={categoryName}
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-brand-dark/80 to-brand-dark/40" />
-          <div className="absolute inset-0 flex items-center">
-            <div className="container-luxury mx-auto px-4 md:px-8 lg:px-16">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-              >
-                {/* Breadcrumb */}
-                <div className="flex items-center gap-2 text-white/70 text-sm mb-3">
-                  <Link to="/" className="hover:text-white transition-colors">Home</Link>
-                  <ChevronRight className="w-4 h-4" />
-                  <span className="text-white">{categoryName}</span>
-                </div>
-                <h1 className="heading-display text-white">{categoryName}</h1>
-                <p className="text-white/70 mt-2">{filteredProducts.length} products</p>
-              </motion.div>
+      <main className="pt-32 pb-16">
+        <div className="container-luxury mx-auto px-4">
+          
+          <div className="mb-12">
+            <div className="flex items-center gap-2 text-gray-400 text-[10px] uppercase tracking-[0.2em] mb-4">
+              <Link to="/" className="hover:text-black">Home</Link>
+              <ChevronRight className="w-3 h-3" />
+              <span className="text-black font-bold">{pageTitle}</span>
             </div>
+            <h1 className="font-display text-2xl md:text-3xl font-bold text-black uppercase tracking-tighter">
+              {pageTitle}
+            </h1>
           </div>
-        </div>
 
-        {/* Subcategory Pills */}
-        <div className="sticky top-16 md:top-20 bg-background/95 backdrop-blur-md z-30 border-b border-border">
-          <div className="container-luxury mx-auto px-4 md:px-8 lg:px-16 py-4">
-            <div className="flex gap-2 overflow-x-auto scrollbar-hide">
-              {subcategories.map((sub) => (
-                <button
-                  key={sub}
-                  onClick={() => setSelectedSubcategory(sub)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
-                    selectedSubcategory === sub
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-secondary text-foreground hover:bg-secondary/80'
-                  }`}
-                >
-                  {sub}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div className="container-luxury mx-auto px-4 md:px-8 lg:px-16 py-8">
-          <div className="flex gap-8">
-            {/* Desktop Sidebar */}
-            <aside className="hidden lg:block w-64 flex-shrink-0">
+          <div className="flex flex-col lg:flex-row gap-12">
+            <aside className="hidden lg:block w-64 shrink-0">
               <div className="sticky top-40">
-                <div className="flex items-center gap-2 mb-6">
-                  <Filter className="w-5 h-5 text-accent" />
-                  <h3 className="font-display text-lg font-medium">Filters</h3>
-                </div>
                 <FilterSidebar />
               </div>
             </aside>
 
-            {/* Products Grid */}
             <div className="flex-1">
-              {/* Toolbar */}
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-4">
-                  {/* Mobile Filter Button */}
-                  <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
-                    <SheetTrigger asChild>
-                      <Button variant="outline" className="lg:hidden">
-                        <SlidersHorizontal className="w-4 h-4 mr-2" />
-                        Filters
-                      </Button>
-                    </SheetTrigger>
-                    <SheetContent side="left" className="w-80">
-                      <SheetHeader>
-                        <SheetTitle className="flex items-center gap-2">
-                          <Filter className="w-5 h-5 text-accent" />
-                          Filters
-                        </SheetTitle>
-                      </SheetHeader>
-                      <div className="mt-6">
-                        <FilterSidebar />
-                      </div>
-                    </SheetContent>
-                  </Sheet>
+              <div className="flex items-center justify-between mb-8 pb-4 border-b border-gray-100">
+                <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+                  <SheetTrigger asChild>
+                    <Button variant="outline" className="lg:hidden border-black text-black h-10 text-xs font-bold uppercase tracking-widest">
+                      <SlidersHorizontal className="w-3 h-3 mr-2" /> Filters
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="left" className="w-80">
+                    <SheetHeader className="mb-8 border-b pb-4">
+                      <SheetTitle className="font-display text-2xl uppercase font-bold">Refine</SheetTitle>
+                    </SheetHeader>
+                    <FilterSidebar />
+                  </SheetContent>
+                </Sheet>
 
-                  {/* View Mode Toggle */}
-                  <div className="hidden md:flex items-center gap-1 border border-border rounded-lg p-1">
-                    <button
-                      onClick={() => setViewMode('grid')}
-                      className={`p-2 rounded ${viewMode === 'grid' ? 'bg-secondary' : ''}`}
-                    >
-                      <Grid3X3 className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => setViewMode('large')}
-                      className={`p-2 rounded ${viewMode === 'large' ? 'bg-secondary' : ''}`}
-                    >
-                      <LayoutGrid className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Sort */}
                 <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-40 md:w-48">
-                    <SelectValue placeholder="Sort by" />
+                  <SelectTrigger className="w-48 border-black h-10 text-[10px] font-bold uppercase tracking-widest">
+                    <SelectValue placeholder="Sort By" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="newest">Newest First</SelectItem>
                     <SelectItem value="price-low">Price: Low to High</SelectItem>
                     <SelectItem value="price-high">Price: High to Low</SelectItem>
-                    <SelectItem value="popularity">Popularity</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              {/* Active Filters */}
-              {(selectedSizes.length > 0 || selectedColors.length > 0) && (
-                <div className="flex flex-wrap gap-2 mb-6">
-                  {selectedSizes.map((size) => (
-                    <span
-                      key={size}
-                      className="inline-flex items-center gap-1 px-3 py-1 bg-secondary rounded-full text-sm"
-                    >
-                      {size}
-                      <button onClick={() => setSelectedSizes(selectedSizes.filter((s) => s !== size))}>
-                        <X className="w-3 h-3" />
-                      </button>
-                    </span>
-                  ))}
-                  {selectedColors.map((color) => (
-                    <span
-                      key={color}
-                      className="inline-flex items-center gap-1 px-3 py-1 bg-secondary rounded-full text-sm"
-                    >
-                      {color}
-                      <button onClick={() => setSelectedColors(selectedColors.filter((c) => c !== color))}>
-                        <X className="w-3 h-3" />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              {/* Products */}
-              <div className={`grid gap-4 md:gap-6 ${
-                viewMode === 'grid' 
-                  ? 'grid-cols-2 lg:grid-cols-3' 
-                  : 'grid-cols-1 md:grid-cols-2'
-              }`}>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-6 md:gap-10">
                 {filteredProducts.map((product, index) => (
                   <ProductCard key={product.id} product={product} index={index} />
                 ))}
               </div>
 
-              {/* No Results */}
               {filteredProducts.length === 0 && (
-                <div className="text-center py-16">
-                  <p className="text-muted-foreground">No products found matching your filters.</p>
-                  <Button
-                    variant="outline"
-                    className="mt-4"
-                    onClick={() => {
-                      setPriceRange([500, 30000]);
-                      setSelectedSizes([]);
-                      setSelectedColors([]);
-                      setSelectedSubcategory('All');
-                    }}
-                  >
-                    Clear Filters
-                  </Button>
-                </div>
-              )}
-
-              {/* Pagination */}
-              {filteredProducts.length > 0 && (
-                <div className="flex items-center justify-center gap-2 mt-12">
-                  <Button variant="outline" size="sm" disabled>
-                    Previous
-                  </Button>
-                  <Button variant="default" size="sm">1</Button>
-                  <Button variant="outline" size="sm">2</Button>
-                  <Button variant="outline" size="sm">3</Button>
-                  <Button variant="outline" size="sm">
-                    Next
-                  </Button>
+                <div className="text-center py-20 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                  <p className="text-gray-500 font-bold uppercase text-xs tracking-widest">No products found in this range.</p>
                 </div>
               )}
             </div>
           </div>
         </div>
       </main>
-
       <Footer />
     </div>
   );

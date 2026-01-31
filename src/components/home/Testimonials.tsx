@@ -26,10 +26,8 @@ const Testimonials = () => {
           transition={{ duration: 0.6 }}
           className="text-center mb-12"
         >
-          <span className="text-accent font-body text-sm tracking-[0.3em] uppercase">
-            Customer Love
-          </span>
-          <h2 className="heading-section mt-2">What Our Queens Say</h2>
+          
+          <h2 className="heading-section mt-2">What Our Customers Say</h2>
         </motion.div>
 
         {/* Testimonial Carousel */}

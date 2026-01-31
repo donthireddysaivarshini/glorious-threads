@@ -9,12 +9,12 @@ import categoryKids from '@/assets/category-kids.jpg';
 import categoryJewellery from '@/assets/category-jewellery.jpg';
 
 const categories = [
-  { name: 'Sarees', image: categorySarees, href: '/category/sarees', count: '120+ Designs' },
-  { name: 'Lehengas', image: categoryLehengas, href: '/category/lehengas', count: '80+ Designs' },
-  { name: 'Kurta Sets', image: categoryKurtas, href: '/category/kurta-sets', count: '150+ Designs' },
-  { name: "Men's Ethnic", image: categoryMens, href: '/category/mens-ethnic', count: '60+ Designs' },
-  { name: 'Kids', image: categoryKids, href: '/category/kids', count: '90+ Designs' },
-  { name: 'Jewellery', image: categoryJewellery, href: '/category/jewellery', count: '200+ Pieces' },
+  { name: 'Sarees', image: categorySarees, href: '/category/sarees' },
+  { name: 'Lehengas', image: categoryLehengas, href: '/category/lehengas', },
+  { name: 'Kurta Sets', image: categoryKurtas, href: '/category/kurta-sets', },
+  { name: "Men's Ethnic", image: categoryMens, href: '/category/mens-ethnic',},
+  { name: 'Kids', image: categoryKids, href: '/category/kids' },
+  { name: 'Jewellery', image: categoryJewellery, href: '/category/jewellery', },
 ];
 
 const CategoryCircles = () => {
@@ -29,9 +29,7 @@ const CategoryCircles = () => {
           transition={{ duration: 0.6 }}
           className="text-center mb-12"
         >
-          <span className="text-accent font-body text-sm tracking-[0.3em] uppercase">
-            Explore
-          </span>
+          
           <h2 className="heading-section mt-2">Shop by Category</h2>
         </motion.div>
 
@@ -59,9 +57,7 @@ const CategoryCircles = () => {
                 <h3 className="font-display text-sm md:text-base font-medium text-foreground group-hover:text-primary transition-colors">
                   {category.name}
                 </h3>
-                <span className="text-xs text-muted-foreground mt-0.5">
-                  {category.count}
-                </span>
+                
               </Link>
             </motion.div>
           ))}
