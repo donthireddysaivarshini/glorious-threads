@@ -13,11 +13,13 @@ import Testimonials from '@/components/home/Testimonials';
 
 const Index = () => {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-white">
       <Header />
       <main>
-        <HeroSection />
+        {/* These two together now take up the "First Look" (approx 75-80vh) */}
+        <HeroSection /> 
         <CategoryCircles />
+        
         <NewArrivals />
         <WatchAndBuy />
         <InstagramBestSellers />
@@ -31,5 +33,4 @@ const Index = () => {
     </div>
   );
 };
-
 export default Index;

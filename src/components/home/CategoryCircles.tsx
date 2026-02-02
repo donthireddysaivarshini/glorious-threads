@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 
+// Assets
 import categorySarees from '@/assets/category-sarees.jpg';
 import categoryLehengas from '@/assets/category-lehengas.jpg';
 import categoryKurtas from '@/assets/category-kurtas.jpg';
@@ -9,55 +10,48 @@ import categoryKids from '@/assets/category-kids.jpg';
 import categoryJewellery from '@/assets/category-jewellery.jpg';
 
 const categories = [
+  { name: 'New Arrivals', image: categorySarees, href: '/collections/new-arrivals' },
+  { name: 'Gowns', image: categoryMens, href: '/category/gowns' },
+  { name: 'Best Seller', image: categoryJewellery, href: '/collections/best-sellers' },
+  { name: 'Lehenga', image: categoryLehengas, href: '/category/lehengas' },
   { name: 'Sarees', image: categorySarees, href: '/category/sarees' },
-  { name: 'Lehengas', image: categoryLehengas, href: '/category/lehengas', },
-  { name: 'Kurta Sets', image: categoryKurtas, href: '/category/kurta-sets', },
-  { name: "Men's Ethnic", image: categoryMens, href: '/category/mens-ethnic',},
-  { name: 'Kids', image: categoryKids, href: '/category/kids' },
-  { name: 'Jewellery', image: categoryJewellery, href: '/category/jewellery', },
+  { name: 'Kurta Sets', image: categoryKurtas, href: '/category/kurta-sets' },
+  { name: 'Kids Wear', image: categoryKids, href: '/category/kids' },
+  { name: 'Banarasi', image: categorySarees, href: '/category/sarees/banarasi' },
 ];
 
 const CategoryCircles = () => {
   return (
-    <section className="section-padding bg-background">
-      <div className="container-luxury mx-auto">
-        {/* Section Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-12"
-        >
-          
-          <h2 className="heading-section mt-2">Shop by Category</h2>
-        </motion.div>
-
-        {/* Categories Grid */}
-        <div className="grid grid-cols-3 md:grid-cols-6 gap-4 md:gap-8">
+    <section className="pt-6 pb-10 md:pt-10 md:pb-16 bg-[#FFF8F8]"> {/* Creative soft background */}
+      <div className="container-luxury mx-auto px-4">
+        <div className="flex flex-wrap justify-center gap-x-6 gap-y-8 md:gap-x-10 md:gap-y-12">
           {categories.map((category, index) => (
             <motion.div
               key={category.name}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
+              transition={{ duration: 0.5, delay: index * 0.05 }}
+              className="flex-shrink-0"
             >
               <Link
                 to={category.href}
-                className="flex flex-col items-center group"
+                className="flex flex-col items-center group w-[75px] md:w-28 lg:w-32"
               >
-                <div className="category-circle w-24 h-24 md:w-32 md:h-32 lg:w-36 lg:h-36 mb-3">
-                  <img
-                    src={category.image}
-                    alt={category.name}
-                    className="w-full h-full object-cover img-zoom"
-                  />
+                {/* Border with glow effect */}
+                <div className="relative p-1 rounded-full border border-primary/20 group-hover:border-primary group-hover:shadow-[0_0_15px_rgba(var(--primary),0.2)] transition-all duration-500">
+                  <div className="w-16 h-16 md:w-24 md:h-24 lg:w-28 lg:h-28 rounded-full overflow-hidden shadow-sm">
+                    <img
+                      src={category.image}
+                      alt={category.name}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-125"
+                    />
+                  </div>
                 </div>
-                <h3 className="font-display text-sm md:text-base font-medium text-foreground group-hover:text-primary transition-colors">
+
+                <h3 className="mt-3 text-center text-[10px] md:text-[12px] font-bold text-foreground group-hover:text-primary transition-colors uppercase tracking-tight leading-tight px-1">
                   {category.name}
                 </h3>
-                
               </Link>
             </motion.div>
           ))}

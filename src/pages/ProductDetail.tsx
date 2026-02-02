@@ -151,20 +151,7 @@ const ProductDetail = () => {
               </div>
 
               {/* USP Badges - Responsive Grid */}
-              <div className="grid grid-cols-3 gap-2 p-4 md:p-6 bg-secondary/20 rounded-xl border border-border/50">
-                <div className="text-center">
-                  <Truck className="mx-auto mb-1.5 text-primary" size={18}/>
-                  <p className="text-[9px] md:text-[10px] font-bold uppercase leading-tight">Free Shipping</p>
-                </div>
-                <div className="text-center border-x border-border/50">
-                  <RotateCcw className="mx-auto mb-1.5 text-primary" size={18}/>
-                  <p className="text-[9px] md:text-[10px] font-bold uppercase leading-tight">Easy Exchange</p>
-                </div>
-                <div className="text-center">
-                  <ShieldCheck className="mx-auto mb-1.5 text-primary" size={18}/>
-                  <p className="text-[9px] md:text-[10px] font-bold uppercase leading-tight">100% Authentic</p>
-                </div>
-              </div>
+              
             </div>
           </div>
 
