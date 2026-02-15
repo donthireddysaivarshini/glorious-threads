@@ -8,7 +8,7 @@ import InstagramBestSellers from '@/components/home/InstagramBestSellers';
 import FeaturedLehengas from '@/components/home/FeaturedLehengas';
 import SareesCollection from '@/components/home/SareesCollection';
 import BrandStory from '@/components/home/BrandStory';
-import KidsCollection from '@/components/home/KidsCollection';
+
 import Testimonials from '@/components/home/Testimonials';
 import ExploreAll from '@/components/home/ExploreAll';
 
@@ -31,7 +31,7 @@ const Index = () => {
         <FeaturedLehengas />
         <SareesCollection />
         <BrandStory />
-        <KidsCollection />
+        
         <Testimonials />
       </main>
       <Footer />

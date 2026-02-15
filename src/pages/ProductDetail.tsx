@@ -113,8 +113,9 @@ const ProductDetail = () => {
   return (
     <div className="min-h-screen bg-white">
       <Header />
-      <main className="pt-16 md:pt-28 pb-10">
+      <main className="pt-24 md:pt-40 pb-10">
         <div className="max-w-[1400px] mx-auto px-4 md:px-10">
+          
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16">
             <div className="lg:col-span-7 space-y-4">
               <div className="aspect-[3/4] bg-zinc-50 relative overflow-hidden group">
