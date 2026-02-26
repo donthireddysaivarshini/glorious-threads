@@ -71,7 +71,32 @@ export const authService = {
 };
 
 export const orderService = {
-  getUserOrders: async () => (await api.get('/orders/')).data,
+  createCheckoutSession: async (orderData: any) => {
+    const response = await api.post('/orders/checkout/', orderData);
+    return response.data;
+  },
+
+  verifyPayment: async (paymentData: {
+    razorpay_order_id: string;
+    razorpay_payment_id: string;
+    razorpay_signature: string;
+  }) => {
+    const response = await api.post('/payments/verify/', paymentData);
+    return response.data;
+  },
+
+  getUserOrders: async () => {
+    const response = await api.get('/orders/');
+    return response.data;
+  },
+
+  // 🔥 ADD THIS FUNCTION
+  updateOrderStatus: async (orderId: number, newStatus: string) => {
+    const response = await api.patch(`/orders/${orderId}/update-status/`, { 
+      order_status: newStatus 
+    });
+    return response.data;
+  }
 };
 
 export const storeService = {
@@ -108,6 +133,7 @@ addReview: async (slug: string, formData: FormData) => {
       'Content-Type': 'multipart/form-data',
     },
   });
+  
 },
   submitReview: async (productSlug: string, reviewData: FormData) => {
   const response = await api.post(`/store/products/${productSlug}/reviews/`, reviewData, {

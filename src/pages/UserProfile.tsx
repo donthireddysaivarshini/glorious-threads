@@ -1,54 +1,138 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom"; 
-import { Package, MapPin, LogOut, Loader2, ChevronRight, Plus, Pencil, User } from "lucide-react";
+import { 
+  Package, MapPin, LogOut, ArrowLeft, Loader2, ChevronDown, 
+  ChevronLeft, ChevronRight, Truck, CheckCircle, Clock, AlertCircle, 
+  Trash2, Star, Plus, Pencil
+} from "lucide-react";
 import { toast } from "sonner";
+import { orderService, authService } from "@/services/api";
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
-import { authService, orderService } from "../services/api"; 
-import api from "../services/api";
+// --- INTERFACES ---
+interface OrderItem {
+  id: number;
+  product_id: number;
+  product_slug: string; 
+  product_name: string;
+  variant_label: string;
+  price: string;
+  quantity: number;
+  image?: string; // ✅ Added image field
+}
+
+interface Order {
+  id: number;
+  total_amount: string;
+  payment_status: string;
+  order_status: string;
+  created_at: string;
+  shipping_address: string;
+  phone: string;
+  items: OrderItem[];
+  razorpay_order_id?: string;
+}
+
+interface SavedAddress {
+  id: number;
+  label: string;
+  address: string;
+  apartment?: string;
+  city: string;
+  state: string;
+  zip_code: string;
+  country: string;
+  phone: string;
+  is_default: boolean;
+  first_name?: string;
+  last_name?: string;
+}
 
 const UserProfile = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'orders' | 'addresses'>('orders');
   const [userProfile, setUserProfile] = useState<any>(null);
-  const [addresses, setAddresses] = useState<any[]>([]);
-  const [allOrders, setAllOrders] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [addressForm, setAddressForm] = useState({ label: 'Home', first_name: '', last_name: '', address: '', city: 'Hyderabad', state: 'Telangana', zip_code: '', phone: '', is_default: false });
-  const [submittingAddress, setSubmittingAddress] = useState(false);
+  
+  // --- ORDER STATE ---
+  const [allOrders, setAllOrders] = useState<Order[]>([]);
+  const [loadingOrders, setLoadingOrders] = useState(false);
+  const [expandedOrderId, setExpandedOrderId] = useState<number | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
+  // --- ADDRESS STATE ---
+  const [addresses, setAddresses] = useState<SavedAddress[]>([]);
+  const [loadingAddresses, setLoadingAddresses] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [submittingAddress, setSubmittingAddress] = useState(false);
+  
+  const [addressForm, setAddressForm] = useState({
+    label: 'Home', first_name: '', last_name: '', address: '', apartment: '',
+    city: '', state: 'Telangana', zip_code: '', country: 'India', phone: '', is_default: false,
+  });
+
+  // --- AUTH & INITIAL DATA ---
   useEffect(() => {
     const token = localStorage.getItem("userToken");
     if (!token) {
-      setLoading(false);
+      navigate("/login");
       return;
     }
 
-    const fetchData = async () => {
-      try {
-        const [profile, addr, orders] = await Promise.all([
-            authService.getProfile(),
-            authService.getSavedAddresses(),
-            orderService.getUserOrders().catch(() => []) 
-        ]);
-        setUserProfile(profile);
-        setAddresses(Array.isArray(addr) ? addr : addr.results || []);
-        setAllOrders(Array.isArray(orders) ? orders : orders.results || []);
-      } catch (e: any) {
-        console.error("Data Load Error", e);
-      } finally {
-        setLoading(false);
-      }
+    const loadInitialData = async () => {
+        try {
+            const profile = await authService.getProfile();
+            setUserProfile(profile);
+            if (profile.is_staff || profile.is_superuser) setIsAdmin(true);
+            
+            // Initial load for orders
+            fetchOrders();
+        } catch (err) {
+            console.error("Profile load failed", err);
+        }
     };
-    fetchData();
-  }, []);
+    loadInitialData();
+  }, [navigate]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("userToken");
-    toast.success("Logged out successfully");
-    navigate("/login"); 
+  // Load data when tab changes
+  useEffect(() => {
+    if (activeTab === 'orders') fetchOrders();
+    if (activeTab === 'addresses') fetchAddresses();
+  }, [activeTab]);
+
+  const fetchOrders = async () => {
+    try {
+      setLoadingOrders(true);
+      const data = await orderService.getUserOrders();
+      const ordersList = Array.isArray(data) ? data : data.results || [];
+      setAllOrders(ordersList);
+    } catch (error) {
+      setAllOrders([]);
+    } finally {
+      setLoadingOrders(false);
+    }
+  };
+
+  const fetchAddresses = async () => {
+    setLoadingAddresses(true);
+    try {
+      const data = await authService.getSavedAddresses();
+      setAddresses(Array.isArray(data) ? data : data.results || []);
+    } catch (err) {
+      setAddresses([]);
+    } finally {
+      setLoadingAddresses(false);
+    }
+  };
+
+  const handleUpdateStatus = async (orderId: number, newStatus: string) => {
+    try {
+      await orderService.updateOrderStatus(orderId, newStatus);
+      toast.success(`Status updated to ${newStatus}`);
+      fetchOrders(); // Refresh to show changes
+    } catch (err) {
+      toast.error("Failed to update status");
+    }
   };
 
   const handleSaveAddress = async (e: React.FormEvent) => {
@@ -58,122 +142,174 @@ const UserProfile = () => {
       await authService.saveAddress(addressForm);
       toast.success("Address saved");
       setShowAddForm(false);
-      const updated = await authService.getSavedAddresses();
-      setAddresses(Array.isArray(updated) ? updated : updated.results || []);
-    } catch(err: any) { 
+      fetchAddresses();
+    } catch (err) {
       toast.error("Could not save address");
-    } finally { 
-      setSubmittingAddress(false); 
+    } finally {
+      setSubmittingAddress(false);
     }
   };
 
-  if (loading) return <div className="min-h-screen flex justify-center items-center bg-[#FFF8F8]"><Loader2 className="w-10 h-10 animate-spin text-primary" /></div>;
+  const handleLogout = () => {
+    localStorage.removeItem("userToken");
+    toast.success("Logged out");
+    navigate("/login");
+  };
 
-  if (!localStorage.getItem("userToken")) {
-    return (
-      <div className="min-h-screen bg-white flex flex-col">
-        <Header />
-        <main className="flex-1 flex flex-col items-center justify-center text-center px-4">
-          <div className="p-12 bg-[#FFF8F8] rounded-[2rem] border border-pink-100 max-w-md">
-            <User size={48} className="mx-auto text-primary mb-6 opacity-30" />
-            <h2 className="text-2xl font-bold text-black uppercase tracking-tight mb-3">My Account</h2>
-            <p className="text-muted-foreground text-sm mb-8 leading-relaxed">Please login to see your orders and saved addresses.</p>
-            <Button onClick={() => navigate("/login")} className="w-full bg-black text-white rounded-full h-12 font-bold uppercase text-[10px] tracking-widest">Login / Sign Up</Button>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
+  const getStatusConfig = (status: string) => {
+    switch (status) {
+      case 'Delivered': return { icon: <CheckCircle className="w-4 h-4" />, color: 'text-green-600 bg-green-50 border-green-100' };
+      case 'Shipped': return { icon: <Truck className="w-4 h-4" />, color: 'text-blue-600 bg-blue-50 border-blue-100' };
+      case 'Processing': return { icon: <Clock className="w-4 h-4" />, color: 'text-amber-600 bg-amber-50 border-amber-100' };
+      default: return { icon: <Package className="w-4 h-4" />, color: 'text-gray-600 bg-gray-50 border-gray-100' };
+    }
+  };
+
+  if (loadingOrders && !allOrders.length) return <div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin" /></div>;
 
   return (
-    <div className="min-h-screen bg-[#FFF8F8]/40 pt-32 md:pt-40 pb-20">
+    <div className="min-h-screen bg-[#FFF8F8]/40 pt-32 pb-20">
       <Header />
-      <div className="container-luxury mx-auto px-4 md:px-8 max-w-6xl">
+      <div className="container mx-auto px-4 max-w-6xl">
         <div className="flex flex-col lg:flex-row gap-10">
           
-          <aside className="w-full lg:w-72 bg-white rounded-3xl shadow-sm p-8 h-fit border border-pink-100">
-            <div className="flex items-center gap-4 mb-8 pb-6 border-b border-pink-50">
-              <div className="w-14 h-14 rounded-full bg-primary flex items-center justify-center text-white font-bold text-xl flex-shrink-0">
-                {userProfile?.first_name?.[0] || userProfile?.email?.[0]}
-              </div>
-              <div className="overflow-hidden">
-                <p className="text-base font-bold truncate text-black capitalize">
-                    {userProfile?.first_name || 'My Account'}
-                </p>
-                <p className="text-[11px] text-gray-500 truncate lowercase">{userProfile?.email}</p>
-              </div>
+          {/* Sidebar */}
+          <aside className="w-full lg:w-72 space-y-4">
+            <div className="bg-white p-6 rounded-3xl border border-pink-100 shadow-sm">
+                <div className="flex items-center gap-4 mb-6">
+                    <div className="w-12 h-12 rounded-full bg-black text-white flex items-center justify-center font-bold">
+                        {userProfile?.email?.[0].toUpperCase()}
+                    </div>
+                    <div className="overflow-hidden">
+                        <p className="font-bold truncate text-sm">{userProfile?.email}</p>
+                        <p className="text-[10px] text-gray-400 uppercase tracking-widest">Premium Member</p>
+                    </div>
+                </div>
+                <nav className="space-y-2">
+                    <button onClick={() => setActiveTab('orders')} className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-[11px] font-bold uppercase transition-all ${activeTab === 'orders' ? 'bg-black text-white' : 'hover:bg-pink-50 text-gray-600'}`}>
+                        <span className="flex items-center gap-2"><Package size={16} /> My Orders</span>
+                        <ChevronRight size={14} />
+                    </button>
+                    <button onClick={() => setActiveTab('addresses')} className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-[11px] font-bold uppercase transition-all ${activeTab === 'addresses' ? 'bg-black text-white' : 'hover:bg-pink-50 text-gray-600'}`}>
+                        <span className="flex items-center gap-2"><MapPin size={16} /> Addresses</span>
+                        <ChevronRight size={14} />
+                    </button>
+                    <button onClick={handleLogout} className="w-full flex items-center gap-2 px-4 py-3 text-[11px] font-bold uppercase text-red-500 hover:bg-red-50 rounded-xl transition-all mt-4">
+                        <LogOut size={16} /> Logout
+                    </button>
+                </nav>
             </div>
-            
-            <nav className="space-y-2">
-              <button onClick={() => setActiveTab('orders')} className={`w-full flex items-center justify-between px-4 py-3.5 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all ${activeTab === 'orders' ? 'bg-primary text-white shadow-md' : 'text-gray-600 hover:bg-pink-50'}`}>
-                <div className="flex items-center gap-3"><Package size={16} /> My Orders</div>
-                <ChevronRight size={14} className="opacity-40" />
-              </button>
-
-              <button onClick={() => setActiveTab('addresses')} className={`w-full flex items-center justify-between px-4 py-3.5 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all ${activeTab === 'addresses' ? 'bg-primary text-white shadow-md' : 'text-gray-600 hover:bg-pink-50'}`}>
-                <div className="flex items-center gap-3"><MapPin size={16} /> Saved Addresses</div>
-                <ChevronRight size={14} className="opacity-40" />
-              </button>
-
-              <div className="pt-6 mt-6 border-t border-pink-50">
-                <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[11px] font-bold uppercase text-red-500 hover:bg-red-50 transition-colors">
-                  <LogOut size={16} /> Logout
-                </button>
-              </div>
-            </nav>
           </aside>
 
-          <main className="flex-1 bg-white rounded-[2rem] shadow-sm p-8 border border-pink-100 min-h-[500px]">
+          {/* Main Content */}
+          <main className="flex-1 bg-white rounded-[2.5rem] p-8 border border-pink-100 shadow-sm min-h-[600px]">
             {activeTab === 'orders' ? (
-              <div className="space-y-6 animate-in fade-in">
-                <h2 className="text-xl font-bold text-black uppercase tracking-tight border-b border-pink-50 pb-4">My Orders</h2>
-                <div className="text-center py-24">
-                  <Package size={48} className="text-pink-100 mx-auto mb-4" />
-                  <p className="text-gray-500 text-sm">Your orders appear here.</p>
-                  <Link to="/"><Button className="mt-6 bg-black text-white px-8 rounded-full font-bold uppercase text-[10px] tracking-widest">Go to Shop</Button></Link>
-                </div>
+              <div className="space-y-6">
+                <h2 className="text-xl font-bold uppercase tracking-tight border-b pb-4">Order History</h2>
+                {allOrders.length === 0 ? (
+                  <div className="text-center py-20">
+                    <Package size={48} className="mx-auto text-pink-100 mb-4" />
+                    <p className="text-gray-400 text-sm">No orders found.</p>
+                    <Link to="/"><Button className="mt-4 bg-black text-white rounded-full text-[10px] uppercase font-bold">Shop Now</Button></Link>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {allOrders.map((order) => (
+                      <div key={order.id} className="border border-pink-50 rounded-2xl overflow-hidden hover:shadow-md transition-all">
+                        <div className="bg-gray-50/50 p-5 flex flex-wrap justify-between items-center gap-4">
+                          <div className="flex gap-6">
+                            <div>
+                              <p className="text-[9px] font-bold text-gray-400 uppercase">Order ID</p>
+                              <p className="text-xs font-bold">#{order.razorpay_order_id?.slice(-8) || order.id}</p>
+                            </div>
+                            <div>
+                              <p className="text-[9px] font-bold text-gray-400 uppercase">Total</p>
+                              <p className="text-xs font-bold">₹{order.total_amount}</p>
+                            </div>
+                          </div>
+                          <div className={`flex items-center gap-2 px-3 py-1 rounded-full border ${getStatusConfig(order.order_status).color}`}>
+                            {getStatusConfig(order.order_status).icon}
+                            <span className="text-[10px] font-bold uppercase">{order.order_status}</span>
+                          </div>
+                        </div>
+
+                        <div className="p-5 space-y-4">
+                          {order.items.map((item, idx) => (
+                            <div key={idx} className="flex gap-4 items-center">
+                              {/* ✅ Dynamic Product Image */}
+                              <div className="w-16 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 border border-pink-50">
+                                {item.image ? (
+                                    <img src={item.image} className="w-full h-full object-cover" alt={item.product_name} />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-300">GTD</div>
+                                )}
+                              </div>
+                              <div className="flex-1">
+                                {/* ✅ Link to Product Detail */}
+                                <Link to={`/api/store/products/${item.product_slug}/`} className="text-sm font-bold hover:text-pink-500 transition-colors">
+                                  {item.product_name}
+                                </Link>
+                                <p className="text-[10px] text-gray-400">{item.variant_label}</p>
+                                <p className="text-[10px] font-bold">Qty: {item.quantity}</p>
+                              </div>
+                              <p className="font-bold text-sm">₹{item.price}</p>
+                            </div>
+                          ))}
+                        </div>
+
+                        {isAdmin && (
+                            <div className="bg-pink-50/20 p-4 border-t border-pink-50 flex items-center justify-between">
+                                <span className="text-[10px] font-bold uppercase text-gray-400">Admin Controls:</span>
+                                <select 
+                                    className="text-[10px] font-bold uppercase border-pink-100 rounded-lg p-1 outline-none"
+                                    value={order.order_status}
+                                    onChange={(e) => handleUpdateStatus(order.id, e.target.value)}
+                                >
+                                    <option value="Processing">Processing</option>
+                                    <option value="Shipped">Shipped</option>
+                                    <option value="Delivered">Delivered</option>
+                                    <option value="Cancelled">Cancelled</option>
+                                </select>
+                            </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ) : (
-              <div className="space-y-6 animate-in fade-in">
-                <div className="flex justify-between items-center border-b border-pink-50 pb-4">
-                  <h2 className="text-xl font-bold text-black uppercase tracking-tight">Saved Addresses</h2>
-                  {!showAddForm && (
-                    <Button onClick={() => setShowAddForm(true)} className="bg-primary text-white font-bold rounded-full px-5 text-[10px] uppercase h-9 shadow-sm">
+              <div className="space-y-6">
+                 <div className="flex justify-between items-center border-b pb-4">
+                  <h2 className="text-xl font-bold uppercase tracking-tight">Addresses</h2>
+                  {!showAddForm && addresses.length < 3 && (
+                    <Button onClick={() => setShowAddForm(true)} className="bg-black text-white text-[10px] font-bold uppercase h-8 rounded-full">
                       <Plus size={14} className="mr-1" /> Add New
                     </Button>
                   )}
                 </div>
 
                 {showAddForm ? (
-                  <form onSubmit={handleSaveAddress} className="grid gap-4 md:grid-cols-2 bg-[#FFF8F8]/30 p-6 rounded-2xl border border-pink-100 animate-in slide-in-from-top-2">
-                    <input placeholder="First Name" value={addressForm.first_name} onChange={e=>setAddressForm({...addressForm, first_name:e.target.value})} className="p-3 bg-white border border-pink-100 rounded-xl outline-none focus:ring-1 focus:ring-primary text-sm" required />
-                    <input placeholder="Last Name" value={addressForm.last_name} onChange={e=>setAddressForm({...addressForm, last_name:e.target.value})} className="p-3 bg-white border border-pink-100 rounded-xl outline-none focus:ring-1 focus:ring-primary text-sm" />
-                    <input placeholder="Phone" value={addressForm.phone} onChange={e=>setAddressForm({...addressForm, phone:e.target.value})} className="p-3 bg-white border border-pink-100 rounded-xl outline-none focus:ring-1 focus:ring-primary text-sm" required />
-                    <input placeholder="Zip Code (Pincode)" value={addressForm.zip_code} onChange={e=>setAddressForm({...addressForm, zip_code:e.target.value})} className="p-3 bg-white border border-pink-100 rounded-xl outline-none focus:ring-1 focus:ring-primary text-sm" required />
-                    <input placeholder="Full Address" value={addressForm.address} onChange={e=>setAddressForm({...addressForm, address:e.target.value})} className="md:col-span-2 p-3 bg-white border border-pink-100 rounded-xl outline-none focus:ring-1 focus:ring-primary text-sm" required />
-                    <div className="flex gap-3 mt-2">
-                      <Button disabled={submittingAddress} className="bg-black text-white px-8 rounded-full h-10 uppercase text-[10px] font-bold">Save</Button>
-                      <Button type="button" onClick={() => setShowAddForm(false)} variant="ghost" className="h-10 uppercase text-[10px] font-bold">Cancel</Button>
-                    </div>
-                  </form>
+                   <form onSubmit={handleSaveAddress} className="grid gap-4 md:grid-cols-2 bg-gray-50 p-6 rounded-2xl animate-in fade-in zoom-in-95">
+                      <input placeholder="Label (e.g. Home)" className="p-3 bg-white border rounded-xl text-sm" value={addressForm.label} onChange={e=>setAddressForm({...addressForm, label:e.target.value})} required />
+                      <input placeholder="Phone" className="p-3 bg-white border rounded-xl text-sm" value={addressForm.phone} onChange={e=>setAddressForm({...addressForm, phone:e.target.value})} required />
+                      <input placeholder="Address" className="p-3 bg-white border rounded-xl text-sm md:col-span-2" value={addressForm.address} onChange={e=>setAddressForm({...addressForm, address:e.target.value})} required />
+                      <div className="flex gap-2">
+                        <Button type="submit" disabled={submittingAddress} className="bg-black text-white px-6 rounded-full text-[10px] font-bold">Save</Button>
+                        <Button type="button" onClick={()=>setShowAddForm(false)} variant="ghost" className="text-[10px] font-bold">Cancel</Button>
+                      </div>
+                   </form>
                 ) : (
                   <div className="grid gap-4">
-                    {addresses.length === 0 ? (
-                      <p className="text-gray-400 italic text-center py-10 text-sm">No saved addresses found.</p>
-                    ) : (
-                      addresses.map((addr) => (
-                        <div key={addr.id} className={`p-6 rounded-2xl border flex justify-between items-center transition-all ${addr.is_default ? 'border-primary bg-pink-50/20' : 'border-pink-50'}`}>
-                          <div>
-                            <p className="font-bold text-black text-xs uppercase tracking-widest mb-1">{addr.label}</p>
-                            <p className="text-sm text-gray-700 font-medium">{addr.first_name} {addr.last_name}</p>
-                            <p className="text-xs text-gray-500 mt-1 leading-relaxed">{addr.address}, {addr.city} - {addr.zip_code}</p>
-                            <p className="text-[10px] text-gray-400 mt-1">Phone: {addr.phone}</p>
-                          </div>
-                          <button onClick={() => { setShowAddForm(true); setAddressForm(addr as any); }} className="p-2.5 hover:bg-white rounded-full border border-pink-50 text-gray-400 hover:text-primary"><Pencil size={14} /></button>
+                    {addresses.map(addr => (
+                      <div key={addr.id} className={`p-6 rounded-2xl border flex justify-between items-center ${addr.is_default ? 'border-black bg-gray-50' : 'border-pink-50'}`}>
+                        <div>
+                          <p className="font-bold text-[10px] uppercase text-gray-400 mb-1">{addr.label}</p>
+                          <p className="text-sm font-bold">{addr.address}</p>
+                          <p className="text-xs text-gray-500">{addr.city}, {addr.state}</p>
                         </div>
-                      ))
-                    )}
+                        {addr.is_default && <span className="bg-black text-white text-[8px] px-2 py-1 rounded-full uppercase font-bold">Default</span>}
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
