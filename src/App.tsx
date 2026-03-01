@@ -13,10 +13,12 @@ import UserProfile from "./pages/UserProfile";
 import Index from "./pages/Index";
 import CategoryPage from "./pages/CategoryPage";
 import ProductDetail from "./pages/ProductDetail";
-
 import CheckoutPage from "./pages/CheckoutPage"; // Ensure this page is created
 import NotFound from "./pages/NotFound";
-
+import ReturnPolicy from "./pages/policies/ReturnPolicy";
+import PrivacyPolicy from "./pages/policies/PrivacyPolicy";
+import TermsConditions from "./pages/policies/TermsConditions";
+import ShippingPolicy from "./pages/policies/ShippingPolicy";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -39,7 +41,10 @@ const App = () => (
             <Route path="/watch-and-buy/:slug" element={<WatchAndBuyDetails />} />
             <Route path="/watch-and-buy" element={<WatchBuyListingPage />} />
             <Route path="/collections/:collection" element={<CategoryPage />} />
-
+            <Route path="/policies/shipping" element={<ShippingPolicy />} />
+            <Route path="/policies/terms" element={<TermsConditions />} />
+            <Route path="/policies/return-policy" element={<ReturnPolicy />} />
+            <Route path="/policies/privacy" element={<PrivacyPolicy />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

@@ -24,10 +24,10 @@ const Index = () => {
         <CategoryCircles />
         
         <NewArrivals />
-        <ExploreAll />
+        
         <WatchAndBuy />
         <InstagramBestSellers />
-        
+        <ExploreAll />
         <FeaturedLehengas />
         <SareesCollection />
         <BrandStory />

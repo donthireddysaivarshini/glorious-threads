@@ -13,7 +13,6 @@ const FeaturedLehengas = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        // 🔥 Fetching based on the new admin checkbox
         const data = await storeService.getProducts({ is_featured_lehenga: 'true' });
         setProducts(data.results || data);
       } catch (err) {
@@ -29,8 +28,9 @@ const FeaturedLehengas = () => {
   if (products.length === 0) return null;
 
   return (
-    <section id="lehengas" className="section-padding bg-secondary/30 overflow-hidden">
-      <div className="container-luxury mx-auto">
+    /* 🔥 REDUCED GAP: Changed section-padding to pt-8 and pb-16 */
+    <section id="lehengas" className="pt-8 pb-16 bg-secondary/30 overflow-hidden">
+      <div className="container-luxury mx-auto px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -41,20 +41,24 @@ const FeaturedLehengas = () => {
           <div>
             <h2 className="heading-section mt-2">Featured Lehengas</h2>
           </div>
-          <div className="flex items-center">
-            <Link to="/category/lehengas">
-              <Button variant="ghost" className="group text-primary hover:bg-[#F4C430] hover:text-black font-black uppercase text-[10px] md:text-xs tracking-widest px-3 py-2 transition-all">
-                View All <ArrowRight className="ml-2 w-4 h-4 transition-transform group-hover:translate-x-1" />
-              </Button>
-            </Link>
-          </div>
         </motion.div>
 
-        {/* 2 per row on mobile, 4 on desktop */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
           {products.slice(0, 4).map((product, index) => (
             <ProductCard key={product.id} product={product} index={index} />
           ))}
+        </div>
+
+        {/* 🔥 VIEW ALL BELOW PRODUCTS: Centered button added here */}
+        <div className="flex justify-center mt-10">
+          <Link to="/category/lehengas">
+            <Button 
+              variant="outline" 
+              className="group border-primary text-primary hover:bg-[#F4C430] hover:text-black font-black uppercase text-[10px] md:text-xs tracking-widest px-8 py-6 transition-all duration-300 rounded-none h-auto"
+            >
+              View All <ArrowRight className="ml-2 w-4 h-4 transition-transform group-hover:translate-x-1" />
+            </Button>
+          </Link>
         </div>
       </div>
     </section>

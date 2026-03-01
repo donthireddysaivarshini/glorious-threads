@@ -13,7 +13,6 @@ const NewArrivals = () => {
   useEffect(() => {
     const fetchNew = async () => {
       try {
-        // Fetching products flagged as new arrivals from the backend
         const data = await storeService.getProducts({ is_new_arrival: true });
         setProducts(data.results || data);
       } catch (err) {
@@ -29,7 +28,8 @@ const NewArrivals = () => {
   if (products.length === 0) return null;
 
   return (
-    <section className="section-padding bg-secondary/30">
+    /* 🔥 REDUCED GAP: Changed section-padding to pt-8 (top) and pb-16 (bottom) */
+    <section className="pt-8 pb-16 bg-secondary/30">
       <div className="container-luxury mx-auto px-4">
         <motion.div 
           initial={{ opacity: 0, y: 20 }} 
@@ -41,30 +41,26 @@ const NewArrivals = () => {
           <div>
             <h2 className="heading-section mt-2">New Arrivals</h2>
           </div>
-          
-          <div className="flex items-center">
-            {/* 🔥 FIXED: Updated link to match the working collections route format */}
-            <Link to="/collections/new-arrivals">
-              <Button 
-                variant="ghost" 
-                className="group text-primary hover:bg-[#F4C430] hover:text-black font-black uppercase text-[10px] md:text-xs tracking-widest px-3 py-2 md:px-5 md:py-6 transition-all duration-300"
-              >
-                View All <ArrowRight className="ml-2 w-4 h-4 transition-transform group-hover:translate-x-1" />
-              </Button>
-            </Link>
-          </div>
         </motion.div>
 
-        {/* 🔥 FIXED GRID: No more scrolling. 
-            Mobile: 2 per row (grid-cols-2)
-            Desktop: 4 per row (md:grid-cols-4)
-        */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
           {products.slice(0, 4).map((product, index) => (
             <div key={product.id} className="w-full">
               <ProductCard product={product} index={index} />
             </div>
           ))}
+        </div>
+
+        {/* 🔥 VIEW ALL BELOW PRODUCTS: Centered button added here */}
+        <div className="flex justify-center mt-10">
+          <Link to="/collections/new-arrivals">
+            <Button 
+              variant="outline" 
+              className="group border-primary text-primary hover:bg-[#F4C430] hover:text-black font-black uppercase text-[10px] md:text-xs tracking-widest px-8 py-6 transition-all duration-300 rounded-none"
+            >
+              View All <ArrowRight className="ml-2 w-4 h-4 transition-transform group-hover:translate-x-1" />
+            </Button>
+          </Link>
         </div>
       </div>
     </section>

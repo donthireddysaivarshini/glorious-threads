@@ -154,7 +154,8 @@ const Header = () => {
             </Sheet>
             <Link to="/" className="flex items-center gap-2">
                 <img src={logo} alt="GTD Logo" className="h-10 w-10 md:h-12 md:w-12 rounded-full aspect-square object-contain border border-pink-50 bg-white" />
-                <h1 className="font-serif italic text-[15px] md:text-[18px] font-medium text-primary whitespace-nowrap hidden sm:block">Glorious Threads by Divya</h1>
+                {/* ✅ Removed 'hidden sm:block' so title appears on mobile, adjusted font size for responsiveness */}
+                <h1 className="font-serif italic text-[12px] min-[400px]:text-[14px] md:text-[18px] font-medium text-primary whitespace-nowrap block">Glorious Threads by Divya</h1>
             </Link>
           </div>
 

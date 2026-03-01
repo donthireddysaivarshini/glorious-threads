@@ -211,7 +211,7 @@ const UserProfile = () => {
                     </div>
                     <div className="overflow-hidden">
                         <p className="font-bold truncate text-sm">{userProfile?.email}</p>
-                        <p className="text-[10px] text-zinc-400 uppercase tracking-widest">Premium Member</p>
+                        
                     </div>
                 </div>
                 <nav className="space-y-2">

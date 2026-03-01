@@ -28,10 +28,11 @@ const WatchAndBuy = () => {
   if (videos.length === 0) return null;
 
   return (
-    <section className="section-padding bg-[#FFF9F9] overflow-hidden">
+    /* 🔥 REDUCED GAP: Changed section-padding to pt-8 (top) and pb-16 (bottom) */
+    <section className="pt-1 pb-2 bg-[#FFF9F9] overflow-hidden">
       <div className="container-luxury mx-auto px-4">
         
-        {/* HEADER */}
+        {/* HEADER - View All removed from here */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }} 
           whileInView={{ opacity: 1, y: 0 }} 
@@ -43,27 +44,27 @@ const WatchAndBuy = () => {
              <h2 className="heading-section mt-2 italic font-serif">Watch & Buy</h2>
              <p className="text-zinc-400 text-[10px] font-bold uppercase tracking-[0.3em] mt-2">Curated Looks in Motion</p>
           </div>
-          
-          <div className="flex items-center">
-            <Link to="/watch-and-buy">
-              <Button 
-                variant="ghost" 
-                className="group text-primary hover:bg-[#F4C430] hover:text-black font-black uppercase text-[10px] md:text-xs tracking-widest px-3 py-2 md:px-5 md:py-6 transition-all duration-300"
-              >
-                View All <ArrowRight className="ml-2 w-4 h-4 transition-transform group-hover:translate-x-1" />
-              </Button>
-            </Link>
-          </div>
         </motion.div>
 
         {/* 🔥 HORIZONTAL SCROLLING CONTAINER */}
-        <div className="flex overflow-x-auto gap-4 md:gap-8 pb-8 scrollbar-hide snap-x snap-mandatory">
-          {videos.slice(0, 10).map((item, index) => (
-            <div key={item.id} className="snap-center">
-              {/* 🔥 We use the WatchBuyCard here to display each product */}
+        <div className="flex overflow-x-auto gap-4 md:gap-6 pb-8 scrollbar-hide snap-x snap-mandatory">
+          {videos.slice(0, 6).map((item, index) => (
+            <div key={item.id} className="w-[70%] md:w-80 flex-shrink-0 snap-center">
               <WatchBuyCard item={item} index={index} />
             </div>
           ))}
+        </div>
+
+        {/* 🔥 VIEW ALL BELOW PRODUCTS: Centered button added here */}
+        <div className="flex justify-center mt-10">
+          <Link to="/watch-and-buy">
+            <Button 
+              variant="outline" 
+              className="group border-primary text-primary hover:bg-[#F4C430] hover:text-black font-black uppercase text-[10px] md:text-xs tracking-widest px-8 py-6 transition-all duration-300 rounded-none"
+            >
+              View All <ArrowRight className="ml-2 w-4 h-4 transition-transform group-hover:translate-x-1" />
+            </Button>
+          </Link>
         </div>
       </div>
     </section>

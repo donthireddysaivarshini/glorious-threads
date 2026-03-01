@@ -317,6 +317,12 @@ const CheckoutPage = () => {
                   <span className="text-black">{formatPrice(totals.finalTotal)}</span>
                 </div>
               </div>
+              <div className="mt-6 mb-6 p-4 bg-amber-50/50 border border-amber-100 rounded-xl">
+  <p className="text-[10px] leading-relaxed text-amber-900/80 font-medium">
+    By clicking Pay Now, you agree to our <Link to="/policies/return-policy" className="underline font-bold">Return Policy</Link>. 
+    <span className="block mt-1 font-bold">⚠️ Note: Mandatory Unboxing Video required for all claims.</span>
+  </p>
+</div>
 
               <Button 
                 onClick={handlePayment} 

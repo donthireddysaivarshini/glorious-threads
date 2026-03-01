@@ -4,7 +4,8 @@ import { motion } from 'framer-motion';
 
 const ExploreAll = () => {
   return (
-    <section className="py-12 bg-[#FFF8F8] border-y border-pink-100/50">
+    /* 🔥 REDUCED GAP: Changed py-12 to pt-4 (top) and pb-12 (bottom) */
+    <section className="pt-4 pb-12 bg-[#FFF8F8] border-y border-pink-100/50">
       <div className="container-luxury mx-auto px-4">
         <div className="flex flex-col items-center justify-center text-center space-y-6">
           <motion.div

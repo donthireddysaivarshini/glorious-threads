@@ -13,7 +13,6 @@ const SareesCollection = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        // 🔥 Fetching based on the new admin checkbox
         const data = await storeService.getProducts({ is_saree_collection: 'true' });
         setProducts(data.results || data);
       } catch (err) {
@@ -28,8 +27,9 @@ const SareesCollection = () => {
   if (loading) return <div className="py-20 flex justify-center"><Loader2 className="animate-spin text-primary" /></div>;
 
   return (
-    <section id="sarees" className="section-padding bg-background">
-      <div className="container-luxury mx-auto">
+    /* 🔥 REDUCED GAP: Changed section-padding to pt-8 and pb-16 */
+    <section id="sarees" className="pt-8 pb-16 bg-background">
+      <div className="container-luxury mx-auto px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -38,14 +38,7 @@ const SareesCollection = () => {
           className="flex items-end justify-between mb-8 px-1"
         >
           <div>
-            <h2 className="heading-section mt-1 text-black">Timeless Drapes</h2>
-          </div>
-          <div className="flex items-center">
-            <Link to="/category/sarees">
-              <Button variant="ghost" className="group text-black hover:bg-[#F4C430] font-black uppercase text-[10px] md:text-xs tracking-widest px-3 py-2 transition-all">
-                View All <ArrowRight className="ml-2 w-4 h-4 transition-transform group-hover:translate-x-1" />
-              </Button>
-            </Link>
+            <h2 className="heading-section mt-1 text-black">Sarees</h2>
           </div>
         </motion.div>
 
@@ -53,6 +46,18 @@ const SareesCollection = () => {
           {products.slice(0, 4).map((product, index) => (
             <ProductCard key={product.id} product={product} index={index} />
           ))}
+        </div>
+
+        {/* 🔥 VIEW ALL BELOW PRODUCTS: Centered button added here */}
+        <div className="flex justify-center mt-10">
+          <Link to="/category/sarees">
+            <Button 
+              variant="outline" 
+              className="group border-black text-black hover:bg-[#F4C430] font-black uppercase text-[10px] md:text-xs tracking-widest px-8 py-6 transition-all duration-300 rounded-none h-auto"
+            >
+              View All <ArrowRight className="ml-2 w-4 h-4 transition-transform group-hover:translate-x-1" />
+            </Button>
+          </Link>
         </div>
       </div>
     </section>

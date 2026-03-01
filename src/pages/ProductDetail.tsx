@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Star, Minus, Plus, ChevronRight, Loader2, Truck, RotateCcw, Camera, Share2 } from 'lucide-react';
+import { Star, Minus, Plus, ChevronRight, ChevronLeft, Loader2, Truck, RotateCcw, Camera, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { storeService } from '@/services/api';
@@ -66,6 +66,14 @@ const ProductDetail = () => {
     return [];
   }, [product, selectedColor]);
 
+  const nextImage = () => {
+    setCurrentImage((prev) => (prev + 1) % displayImages.length);
+  };
+
+  const prevImage = () => {
+    setCurrentImage((prev) => (prev - 1 + displayImages.length) % displayImages.length);
+  };
+
   const handleReviewSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!reviewForm.name || !reviewForm.comment) {
@@ -120,15 +128,40 @@ const ProductDetail = () => {
       <main className="pt-24 md:pt-40 pb-24 md:pb-10">
         <div className="max-w-[1400px] mx-auto px-4 md:px-10">
           
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16">
-            <div className="lg:col-span-7 space-y-4">
-              <div className="aspect-[3/4] bg-zinc-50 relative overflow-hidden group">
-                <img src={displayImages[currentImage]?.url} className="w-full h-full object-cover transition-opacity duration-300" alt="" />
+          {/* grid-cols changed to control width and gap-4 to move columns closer */}
+          <div className="grid grid-cols-1 lg:grid-cols-[450px_1fr] gap-4 lg:gap-8 items-start">
+            
+            {/* LEFT SIDE: FIXED IMAGE SECTION ON DESKTOP */}
+            <div className="lg:sticky lg:top-40 space-y-4">
+              <div className="aspect-[3/4] bg-zinc-50 relative overflow-hidden group lg:max-h-[550px] w-full flex items-center justify-center">
+                {displayImages.length > 1 && (
+                  <>
+                    <button 
+                      onClick={prevImage}
+                      className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 p-2 rounded-full shadow-md z-10 md:hidden"
+                    >
+                      <ChevronLeft size={20} />
+                    </button>
+                    <button 
+                      onClick={nextImage}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 p-2 rounded-full shadow-md z-10 md:hidden"
+                    >
+                      <ChevronRight size={20} />
+                    </button>
+                  </>
+                )}
+
+                <img 
+                  src={displayImages[currentImage]?.url} 
+                  className="w-full h-full object-contain transition-opacity duration-300" 
+                  alt="" 
+                />
                 <div className="absolute bottom-4 right-4 flex gap-2">
                   <button className="bg-white/90 p-3 rounded-full shadow-sm hover:bg-zinc-100"><Share2 size={18} /></button>
                 </div>
               </div>
-              <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+
+              <div className="hidden md:flex gap-2 overflow-x-auto scrollbar-hide">
                 {displayImages.map((img: any, i: number) => (
                   <button 
                     key={i} 
@@ -141,9 +174,10 @@ const ProductDetail = () => {
               </div>
             </div>
 
-            <div className="lg:col-span-5 flex flex-col pt-2">
+            {/* RIGHT SIDE: SCROLLABLE DETAILS SECTION */}
+            <div className="flex flex-col pt-2 max-w-2xl">
               <div className="mb-6">
-                <h1 className="text-xl md:text-2xl font-bold tracking-tight text-zinc-800 mb-1">{product.title}</h1>
+                <h1 className="text-xl md:text-3xl font-bold tracking-tight text-zinc-800 mb-1">{product.title}</h1>
                 <p className="text-sm text-zinc-400 font-medium uppercase tracking-widest mb-4">{product.category_name}</p>
                 <div className="flex items-center gap-3 py-4 border-y border-zinc-100">
                   <span className="text-2xl font-extrabold text-black">₹{displayPrice}</span>
@@ -203,8 +237,8 @@ const ProductDetail = () => {
                 </div>
               </div>
 
-              {/* ACTION BUTTONS: White with Pink border for Add to Bag, Solid Pink for Buy Now */}
-              <div className="fixed bottom-0 left-0 right-0 bg-white p-4 border-t border-zinc-100 grid grid-cols-2 gap-3 z-50 md:relative md:p-0 md:border-t-0 md:bg-transparent md:grid mb-10">
+              {/* Action Buttons: Changed from fixed/floating on mobile to natural relative layout */}
+              <div className="relative bg-white grid grid-cols-2 gap-3 mb-10">
                 <Button 
                     onClick={() => handleAddToCart('bag')} 
                     className="h-14 rounded-none uppercase text-[10px] font-extrabold tracking-widest bg-white border-2 border-primary text-primary hover:bg-white transition-none"
@@ -223,96 +257,97 @@ const ProductDetail = () => {
                 <div className="flex items-center gap-3"><Truck size={18} strokeWidth={1.5} /> Free Shipping & Returns</div>
                 <div className="flex items-center gap-3"><RotateCcw size={18} strokeWidth={1.5}/> 100% Quality Guaranteed</div>
               </div>
-            </div>
-          </div>
 
-          <div className="mt-20 border-t border-zinc-100 pt-16 max-w-4xl">
-            <Tabs defaultValue="details">
-              <TabsList className="bg-transparent border-none gap-10 mb-10">
-                <TabsTrigger value="details" className="bg-transparent rounded-none border-b-2 border-transparent data-[state=active]:border-black text-[11px] uppercase font-bold tracking-widest">Product Details</TabsTrigger>
-                <TabsTrigger value="reviews" className="bg-transparent rounded-none border-b-2 border-transparent data-[state=active]:border-black text-[11px] uppercase font-bold tracking-widest">Reviews ({reviews.length})</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="details" className="text-zinc-600 text-sm leading-relaxed space-y-6">
-                <p>{product.description}</p>
-                <div className="grid grid-cols-2 gap-4 pt-6">
-                  {product.features?.split('\n').map((f:any, i:any) => (
-                    <div key={i} className="flex items-center gap-2 text-[10px] font-bold uppercase text-zinc-400">
-                      <div className="w-1 h-1 bg-pink-500 rounded-full" /> {f}
-                    </div>
-                  ))}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="reviews">
-                <div className="flex justify-between items-center mb-10">
-                  <h3 className="text-sm font-bold uppercase tracking-widest">User Experiences</h3>
-                  <button onClick={() => setShowReviewForm(!showReviewForm)} className="text-[10px] font-black underline uppercase">
-                    {showReviewForm ? "Cancel" : "Write a Review"}
-                  </button>
-                </div>
-
-                {showReviewForm && (
-                  <form onSubmit={handleReviewSubmit} className="bg-zinc-50 p-8 mb-12 space-y-6 animate-in fade-in">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Your Name</label>
-                        <input placeholder="Enter name" required className="w-full p-4 text-xs border-none bg-white outline-none" value={reviewForm.name} onChange={e => setReviewForm({...reviewForm, name: e.target.value})} />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Rating</label>
-                        <div className="flex gap-2 bg-white p-3 h-[50px] items-center">
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <Star 
-                              key={star} 
-                              size={20} 
-                              className={`cursor-pointer transition-colors ${ (hoveredStar || reviewForm.rating) >= star ? 'fill-[#F4C430] text-[#F4C430]' : 'text-zinc-200' }`}
-                              onMouseEnter={() => setHoveredStar(star)}
-                              onMouseLeave={() => setHoveredStar(0)}
-                              onClick={() => setReviewForm({ ...reviewForm, rating: star })}
-                            />
-                          ))}
+              <div className="mt-12 border-t border-zinc-100 pt-8">
+                <Tabs defaultValue="details">
+                  <TabsList className="bg-transparent border-none gap-10 mb-6">
+                    <TabsTrigger value="details" className="bg-transparent rounded-none border-b-2 border-transparent data-[state=active]:border-black text-[11px] uppercase font-bold tracking-widest px-0">Product Details</TabsTrigger>
+                    <TabsTrigger value="reviews" className="bg-transparent rounded-none border-b-2 border-transparent data-[state=active]:border-black text-[11px] uppercase font-bold tracking-widest px-0">Reviews ({reviews.length})</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="details" className="text-zinc-600 text-sm leading-relaxed space-y-6">
+                    <p>{product.description}</p>
+                    <div className="grid grid-cols-2 gap-4 pt-6">
+                      {product.features?.split('\n').map((f:any, i:any) => (
+                        <div key={i} className="flex items-center gap-2 text-[10px] font-bold uppercase text-zinc-400">
+                          <div className="w-1 h-1 bg-pink-500 rounded-full" /> {f}
                         </div>
-                      </div>
+                      ))}
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="reviews">
+                    <div className="flex justify-between items-center mb-6">
+                      <h3 className="text-sm font-bold uppercase tracking-widest">User Experiences</h3>
+                      <button onClick={() => setShowReviewForm(!showReviewForm)} className="text-[10px] font-black underline uppercase">
+                        {showReviewForm ? "Cancel" : "Write a Review"}
+                      </button>
                     </div>
 
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Product Photo (Optional)</label>
-                      <div onClick={() => fileInputRef.current?.click()} className="w-full py-10 border-2 border-dashed border-zinc-200 bg-white flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-zinc-50 transition-colors">
-                        <Camera size={24} className="text-zinc-400" />
-                        <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
-                          {reviewForm.image ? reviewForm.image.name : "Click to upload a photo"}
-                        </span>
-                        <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={(e) => {
-                          const file = e.target.files ? e.target.files[0] : null;
-                          setReviewForm({ ...reviewForm, image: file }); 
-                        }} />
-                      </div>
-                    </div>
+                    {showReviewForm && (
+                      <form onSubmit={handleReviewSubmit} className="bg-zinc-50 p-6 mb-10 space-y-6 animate-in fade-in">
+                        <div className="grid grid-cols-1 gap-6">
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Your Name</label>
+                            <input placeholder="Enter name" required className="w-full p-4 text-xs border-none bg-white outline-none" value={reviewForm.name} onChange={e => setReviewForm({...reviewForm, name: e.target.value})} />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Rating</label>
+                            <div className="flex gap-2 bg-white p-3 h-[50px] items-center">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <Star 
+                                  key={star} 
+                                  size={20} 
+                                  className={`cursor-pointer transition-colors ${ (hoveredStar || reviewForm.rating) >= star ? 'fill-[#F4C430] text-[#F4C430]' : 'text-zinc-200' }`}
+                                  onMouseEnter={() => setHoveredStar(star)}
+                                  onMouseLeave={() => setHoveredStar(0)}
+                                  onClick={() => setReviewForm({ ...reviewForm, rating: star })}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        </div>
 
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Your Comment</label>
-                      <textarea placeholder="Tell us about the fit and quality..." required className="w-full p-4 text-xs border-none bg-white h-32 outline-none" value={reviewForm.comment} onChange={e => setReviewForm({...reviewForm, comment: e.target.value})} />
-                    </div>
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Product Photo (Optional)</label>
+                          <div onClick={() => fileInputRef.current?.click()} className="w-full py-6 border-2 border-dashed border-zinc-200 bg-white flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-zinc-50 transition-colors">
+                            <Camera size={24} className="text-zinc-400" />
+                            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
+                              {reviewForm.image ? reviewForm.image.name : "Click to upload a photo"}
+                            </span>
+                            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={(e) => {
+                              const file = e.target.files ? e.target.files[0] : null;
+                              setReviewForm({ ...reviewForm, image: file }); 
+                            }} />
+                          </div>
+                        </div>
 
-                    <Button type="submit" className="bg-black text-white text-[10px] h-14 px-10 uppercase font-bold tracking-widest">Submit Feedback</Button>
-                  </form>
-                )}
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Your Comment</label>
+                          <textarea placeholder="Tell us about the fit and quality..." required className="w-full p-4 text-xs border-none bg-white h-32 outline-none" value={reviewForm.comment} onChange={e => setReviewForm({...reviewForm, comment: e.target.value})} />
+                        </div>
 
-                <div className="space-y-12">
-                  {reviews.map(r => (
-                    <div key={r.id} className="border-b border-zinc-50 pb-8">
-                      <div className="flex text-[#F4C430] mb-3">
-                        {[...Array(5)].map((_, i) => <Star key={i} size={10} className={i < r.rating ? 'fill-current' : 'text-zinc-200'} />)}
-                      </div>
-                      <p className="text-sm text-zinc-800 font-medium mb-4 italic">"{r.comment}"</p>
-                      {r.image && <img src={r.image} className="w-24 h-32 object-cover rounded-lg mb-4" alt="Review" />}
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">— {r.user_name}</span>
+                        <Button type="submit" className="bg-black text-white text-[10px] h-14 px-10 uppercase font-bold tracking-widest">Submit Feedback</Button>
+                      </form>
+                    )}
+
+                    <div className="space-y-8">
+                      {reviews.map(r => (
+                        <div key={r.id} className="border-b border-zinc-50 pb-6">
+                          <div className="flex text-[#F4C430] mb-3">
+                            {[...Array(5)].map((_, i) => <Star key={i} size={10} className={i < r.rating ? 'fill-current' : 'text-zinc-200'} />)}
+                          </div>
+                          <p className="text-sm text-zinc-800 font-medium mb-4 italic">"{r.comment}"</p>
+                          {r.image && <img src={r.image} className="w-24 h-32 object-cover rounded-lg mb-4" alt="Review" />}
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">— {r.user_name}</span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </TabsContent>
-            </Tabs>
+                  </TabsContent>
+                </Tabs>
+              </div>
+            </div>
+
           </div>
         </div>
       </main>

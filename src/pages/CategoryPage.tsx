@@ -28,15 +28,12 @@ const CategoryPage = () => {
     const loadData = async () => {
       setLoading(true);
       try {
-        // Fetch category info for the header title
         const allCategories = await storeService.getCategories();
         const currentCat = allCategories.find((c: any) => c.slug === category);
         setCategoryData(currentCat);
 
         const params: any = {};
         
-        // 🔥 PRIORITY FILTERING LOGIC: 
-        // Ensures URLs like /category/lehengas fetch based on your "Ticked" checkboxes
         if (category === 'lehengas') {
             params.is_featured_lehenga = 'true';
         } else if (category === 'sarees') {
@@ -135,9 +132,10 @@ const CategoryPage = () => {
   return (
     <div className="min-h-screen bg-white">
       <Header />
-      <main className="pt-24 md:pt-40 pb-16 px-4 max-w-[1440px] mx-auto">
+      <main className="pt-40 md:pt-40 pb-16 px-4 max-w-[1440px] mx-auto">
         <div className="mb-12">
-            <h1 className="text-4xl md:text-7xl font-black uppercase tracking-tighter text-black leading-none">
+            {/* Added break-words and adjusted size for mobile to prevent cutting */}
+            <h1 className="text-2xl md:text-4xl font-black uppercase tracking-tighter text-black leading-tight break-words max-w-full">
               {collection ? collection.replace('-', ' ') : categoryData?.name || category}
             </h1>
             <p className="text-zinc-400 text-xs font-bold uppercase tracking-[0.3em] mt-4 ml-1">

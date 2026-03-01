@@ -13,7 +13,6 @@ const BestSellers = () => {
   useEffect(() => {
     const fetchBestSellers = async () => {
       try {
-        // Fetching best sellers from the dynamic backend endpoint
         const data = await storeService.getProducts({ is_best_seller: true });
         setProducts(data.results || data);
       } catch (err) {
@@ -29,8 +28,10 @@ const BestSellers = () => {
   if (products.length === 0) return null;
 
   return (
-    <section className="section-padding bg-background">
-      <div className="container-luxury mx-auto">
+    /* 🔥 REDUCED GAP: Changed section-padding to pt-8 (top) and pb-16 (bottom) */
+    <section className="pt-8 pb-16 bg-background">
+      <div className="container-luxury mx-auto px-4">
+        {/* HEADER - View All removed from here */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }} 
           whileInView={{ opacity: 1, y: 0 }} 
@@ -41,31 +42,27 @@ const BestSellers = () => {
           <div>
             <h2 className="heading-section mt-2">Best Sellers</h2>
           </div>
-          
-          <div className="flex items-center">
-            <Link to="/collections/best-sellers">
-              <Button 
-                variant="ghost" 
-                className="group text-primary hover:bg-[#F4C430] hover:text-black font-black uppercase text-[10px] md:text-xs tracking-widest px-3 py-2 md:px-5 md:py-6 transition-all duration-300"
-              >
-                View All <ArrowRight className="ml-2 w-4 h-4 transition-transform group-hover:translate-x-1" />
-              </Button>
-            </Link>
-          </div>
         </motion.div>
 
-        {/* MOBILE: 2 Columns Grid (Top 4 items)
-            DESKTOP: Horizontal scroll (flex)
-        */}
-        <div className="grid grid-cols-2 md:flex md:overflow-x-auto gap-3 md:gap-6 scrollbar-hide pb-4">
-          {products.map((product, index) => (
-            <div 
-              key={product.id} 
-              className={`w-full md:w-72 md:flex-shrink-0 ${index >= 4 ? 'hidden md:block' : ''}`}
-            >
+        {/* HORIZONTAL SCROLLING CONTAINER */}
+        <div className="flex overflow-x-auto gap-4 md:gap-6 scrollbar-hide pb-4 snap-x snap-mandatory">
+          {products.slice(0, 6).map((product, index) => (
+            <div key={product.id} className="w-[45%] md:w-72 flex-shrink-0 snap-start">
               <ProductCard product={product} index={index} />
             </div>
           ))}
+        </div>
+
+        {/* 🔥 VIEW ALL BELOW PRODUCTS: Centered button added here */}
+        <div className="flex justify-center mt-10">
+          <Link to="/collections/best-sellers">
+            <Button 
+              variant="outline" 
+              className="group border-primary text-primary hover:bg-[#F4C430] hover:text-black font-black uppercase text-[10px] md:text-xs tracking-widest px-8 py-6 transition-all duration-300 rounded-none"
+            >
+              View All <ArrowRight className="ml-2 w-4 h-4 transition-transform group-hover:translate-x-1" />
+            </Button>
+          </Link>
         </div>
       </div>
     </section>
