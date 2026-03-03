@@ -23,7 +23,7 @@ const Testimonials = () => {
   useEffect(() => {
     const fetchFeaturedReviews = async () => {
       try {
-        const response = await axios.get('http://127.0.0.1:8000/api/store/featured-reviews/');
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/store/featured-reviews/`);
         setTestimonials(response.data);
       } catch (error) {
         console.error("Error fetching reviews:", error);

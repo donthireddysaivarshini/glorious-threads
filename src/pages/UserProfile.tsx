@@ -276,12 +276,20 @@ const UserProfile = () => {
                             {order.items.map((item, idx) => (
                               <div key={idx} className="flex gap-4 items-center">
                                 <div className="w-16 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 border border-pink-50">
-                                  {item.image ? (
-                                      <img src={item.image.startsWith('http') ? item.image : `http://127.0.0.1:8000${item.image}`} className="w-full h-full object-cover" alt={item.product_name} />
-                                  ) : (
-                                      <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-300">GTD</div>
-                                  )}
-                                </div>
+  {item.image ? (
+    <img 
+      /* 🔥 FIXED: Dynamic URL construction */
+      src={item.image.startsWith('http') 
+        ? item.image 
+        : `${import.meta.env.VITE_API_URL.replace('/api', '')}${item.image}`
+      } 
+      className="w-full h-full object-cover" 
+      alt={item.product_name} 
+    />
+  ) : (
+    <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-300">GTD</div>
+  )}
+</div>
                                 <div className="flex-1">
                                   <Link to={`/product/${item.product_slug}`} className="text-sm font-bold hover:text-pink-500 transition-colors uppercase">
                                     {item.product_name}
