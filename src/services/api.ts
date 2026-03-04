@@ -65,7 +65,15 @@ export const authService = {
   },
   getProfile: async () => (await api.get('/auth/user/')).data,
   getSavedAddresses: async () => (await api.get('/auth/addresses/')).data,
-  saveAddress: async (data: any) => (await api.post('/auth/addresses/', data)).data,
+  saveAddress: async (data: any) => {
+    // If it has an ID, we update (PUT), if not, we create (POST)
+    if (data.id) {
+      return (await api.put(`/auth/addresses/${data.id}/`, data)).data;
+    }
+    return (await api.post('/auth/addresses/', data)).data;
+  },
+
+  // 🔥 THE FIX: Explicitly ensure the trailing slash is there
   deleteAddress: async (id: number) => (await api.delete(`/auth/addresses/${id}/`)).data,
   setDefaultAddress: async (id: number) => (await api.post(`/auth/addresses/${id}/set-default/`)).data
 };

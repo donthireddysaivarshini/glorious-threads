@@ -74,6 +74,7 @@ const UserProfile = () => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [submittingAddress, setSubmittingAddress] = useState(false);
+  const [addressToDelete, setAddressToDelete] = useState<number | null>(null);
   
   const initialAddressState = {
     label: 'Home', first_name: '', last_name: '', country: 'India', state: 'Telangana', 
@@ -141,10 +142,12 @@ const UserProfile = () => {
   const handleSaveAddress = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // ✅ 1. PUKKA 10-Digit Mobile Check with Alert
+    // ✅ Updated: Using Toast instead of browser Alert
     const phoneRegex = /^[0-9]{10}$/;
     if (!phoneRegex.test(addressForm.phone)) {
-      alert("Invalid Phone Number: Please enter exactly 10 digits.");
+      toast.error("Invalid Phone Number", {
+        description: "Please enter exactly 10 digits."
+      });
       return;
     }
 
@@ -169,15 +172,16 @@ const UserProfile = () => {
     finally { setSubmittingAddress(false); }
   };
 
-  const handleDeleteAddress = async (id: number) => {
-    if (!window.confirm("Are you sure you want to delete this address?")) return;
+  const confirmDeleteAddress = async () => {
+    if (!addressToDelete) return;
     try {
-      // ✅ Fixed local error by wrapping in try-catch and checking service
-      await authService.deleteAddress(id);
+      await authService.deleteAddress(addressToDelete);
       toast.success("Address removed");
       fetchAddresses();
     } catch (err) {
       toast.error("Could not delete address. Please try again.");
+    } finally {
+      setAddressToDelete(null);
     }
   };
 
@@ -249,12 +253,10 @@ const UserProfile = () => {
                             <div className="flex gap-6 text-left">
                               <div>
                                 <p className="text-[9px] font-bold text-gray-400 uppercase">Sequence</p>
-                                {/* ✅ Displaying "Order Number" based on count */}
                                 <p className="text-xs font-bold">Order {allOrders.length - index}</p>
                               </div>
                               <div>
                                 <p className="text-[9px] font-bold text-gray-400 uppercase">Verification ID</p>
-                                {/* ✅ Displaying Numeric ID that Admin sees */}
                                 <p className="text-xs font-bold">#{order.id}</p>
                               </div>
                               <div>
@@ -278,7 +280,6 @@ const UserProfile = () => {
                                 <div className="w-16 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 border border-pink-50">
   {item.image ? (
     <img 
-      /* 🔥 FIXED: Dynamic URL construction */
       src={item.image.startsWith('http') 
         ? item.image 
         : `${import.meta.env.VITE_API_URL.replace('/api', '')}${item.image}`
@@ -419,7 +420,8 @@ const UserProfile = () => {
                            <button onClick={() => handleEditAddress(addr)} className="p-2 hover:bg-zinc-100 rounded-full transition-all">
                               <Pencil size={16} className="text-primary" />
                            </button>
-                           <button onClick={() => handleDeleteAddress(addr.id)} className="p-2 hover:bg-red-50 rounded-full transition-all">
+                           {/* ✅ Updated to use normal UI modal */}
+                           <button onClick={() => setAddressToDelete(addr.id)} className="p-2 hover:bg-red-50 rounded-full transition-all">
                               <Trash2 size={16} className="text-red-400" />
                            </button>
                         </div>
@@ -433,6 +435,37 @@ const UserProfile = () => {
           </main>
         </div>
       </div>
+      
+      {/* ✅ Normal UI Delete Confirmation Modal */}
+      {addressToDelete && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-[2rem] p-8 max-w-sm w-full shadow-2xl border border-pink-100 animate-in zoom-in-95 duration-200">
+            <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Trash2 className="text-red-500" size={28} />
+            </div>
+            <h3 className="text-lg font-bold text-center uppercase tracking-tight">Delete Address?</h3>
+            <p className="text-sm text-gray-500 text-center mt-2 leading-relaxed">
+              Are you sure you want to remove this address? This action cannot be undone.
+            </p>
+            <div className="flex gap-3 mt-8">
+              <Button 
+                variant="outline" 
+                onClick={() => setAddressToDelete(null)}
+                className="flex-1 rounded-full uppercase text-[10px] font-bold h-12"
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={confirmDeleteAddress}
+                className="flex-1 bg-red-500 hover:bg-red-600 text-white rounded-full uppercase text-[10px] font-bold h-12"
+              >
+                Delete
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Footer />
     </div>
   );
