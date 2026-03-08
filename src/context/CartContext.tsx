@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react'; // ✅ Added useEffect
+import React, { createContext, useContext, useState, useEffect } from 'react';
 
 interface CartItem {
   id: string; 
@@ -10,14 +10,15 @@ interface CartItem {
   quantity: number;
   selectedSize: string;
   selectedColor: { name: string; hex: string };
-  slug: string; // ✅ Added slug to fix Object literal error
+  slug: string; 
+  product_type: 'REGULAR' | 'WATCH_BUY';
 }
 
 interface CartContextType {
   cartItems: CartItem[];
   addToCart: (product: any, quantity: number, size: string, color: { name: string; hex: string }) => void;
-  removeFromCart: (id: string) => void; // ✅ Fixed signature
-  updateQuantity: (id: string, delta: number) => void; // ✅ Fixed signature
+  removeFromCart: (id: string) => void;
+  updateQuantity: (id: string, delta: number) => void;
   clearCart: () => void;
   subtotal: number;
 }
@@ -25,13 +26,11 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider = ({ children }: { children: React.ReactNode }) => {
-  // ✅ PERSISTENCE: Load from localStorage
   const [cartItems, setCartItems] = useState<CartItem[]>(() => {
     const savedCart = localStorage.getItem('gtd_cart');
     return savedCart ? JSON.parse(savedCart) : [];
   });
 
-  // ✅ PERSISTENCE: Sync to localStorage
   useEffect(() => {
     localStorage.setItem('gtd_cart', JSON.stringify(cartItems));
   }, [cartItems]);
@@ -47,16 +46,20 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
         );
       }
 
+      // Logic to determine if it's a video product or standard product
+      const isWatchBuy = product.product_type === 'WATCH_BUY' || !!product.video_url || !!product.video_file;
+
       const newItem: CartItem = {
         id: variantId,
         productId: product.id,
-        name: product.title || product.name,
+        name: product.name || product.title,
         price: Number(product.price),
-        image: product.images?.[0]?.url || product.images?.[0] || '',
+        image: product.thumbnail || (product.images?.[0]?.url || product.images?.[0] || ''),
         quantity,
         selectedSize: size,
         selectedColor: color,
-        slug: product.slug // ✅ Now valid
+        slug: product.slug,
+        product_type: isWatchBuy ? 'WATCH_BUY' : 'REGULAR'
       };
       return [...prev, newItem];
     });

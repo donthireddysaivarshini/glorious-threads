@@ -161,7 +161,8 @@ const CheckoutPage = () => {
         coupon_code: appliedCoupon?.code || null,
         save_address: saveAsDefault, 
         items: cartItems.map(item => ({
-          id: item.productId || item.id,
+          productId: item.productId || item.id, // Ensure this is the numeric ID
+          product_type: item.product_type,      // <--- ADD THIS LINE
           title: item.name || item.title,
           price: item.price,
           quantity: item.quantity,
