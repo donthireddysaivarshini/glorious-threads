@@ -58,7 +58,7 @@ const ReturnPolicy = () => {
          
           
           <p className="text-center text-[10px] font-bold uppercase text-zinc-400 mt-10 tracking-widest">
-            Regarding Glorious Threads by Divya
+            Regards, Glorious Threads by Divya
           </p>
         </section>
       </main>

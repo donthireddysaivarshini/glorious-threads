@@ -21,6 +21,7 @@ interface OrderItem {
   price: string;
   quantity: number;
   image?: string; 
+  is_watch_buy: boolean;
 }
 
 interface Order {
@@ -203,8 +204,8 @@ const UserProfile = () => {
   if (loadingOrders && !allOrders.length) return <div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin" /></div>;
 
   return (
-    <div className="min-h-screen bg-[#FFF8F8]/40 pt-32 pb-20">
-      <Header />
+    <div className="flex flex-col min-h-screen bg-white "> 
+    <Header />
       <div className="container mx-auto px-4 max-w-6xl">
         <div className="flex flex-col lg:flex-row gap-10">
           <aside className="w-full lg:w-72 space-y-4">
@@ -292,12 +293,16 @@ const UserProfile = () => {
   )}
 </div>
                                 <div className="flex-1">
-                                  <Link to={`/product/${item.product_slug}`} className="text-sm font-bold hover:text-pink-500 transition-colors uppercase">
-                                    {item.product_name}
-                                  </Link>
-                                  <p className="text-[10px] text-gray-400">{item.variant_label}</p>
-                                  <p className="text-[10px] font-bold uppercase">Qty: {item.quantity}</p>
-                                </div>
+  {/* Logic: if is_watch_buy is true, route to /watch-and-buy/, else /product/ */}
+  <Link 
+    to={item.is_watch_buy ? `/watch-and-buy/${item.product_slug}` : `/product/${item.product_slug}`} 
+    className="text-sm font-bold hover:text-pink-500 transition-colors uppercase"
+  >
+    {item.product_name}
+  </Link>
+  <p className="text-[10px] text-gray-400">{item.variant_label}</p>
+  <p className="text-[10px] font-bold uppercase">Qty: {item.quantity}</p>
+</div>
                                 <p className="font-bold text-sm">₹{item.price}</p>
                               </div>
                             ))}

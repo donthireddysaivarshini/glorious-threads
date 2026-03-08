@@ -1,8 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { 
-  Star, Minus, Plus, Loader2, Truck, RotateCcw, 
-  Camera, Heart, Share2, ShoppingBag, CheckCircle2, ChevronLeft 
+  Star, Minus, Plus, Loader2, CheckCircle2, ChevronLeft, Camera 
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -71,11 +70,32 @@ const WatchAndBuyDetails = () => {
     ? Math.round(((product.original_price - product.price) / product.original_price) * 100) 
     : 0;
 
-  // 🔥 Matches your CartContext requirement for { name, hex }
   const colorForCart = useMemo(() => ({
     name: selectedColor,
     hex: "" 
   }), [selectedColor]);
+
+  // Handle Add to Bag vs Buy Now
+  const handleAddToCart = (action: 'bag' | 'buy') => {
+    if (!selectedSize) {
+      toast.error("Please select a size first");
+      return;
+    }
+
+    // Explicitly add the product_type for backend identification
+    const cartProduct = { 
+      ...product, 
+      product_type: 'WATCH_BUY' 
+    };
+
+    addToCart(cartProduct, quantity, selectedSize, colorForCart);
+
+    if (action === 'buy') {
+      navigate('/checkout');
+    } else {
+      toast.success("Added to bag");
+    }
+  };
 
   const handleReviewSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -93,21 +113,17 @@ const WatchAndBuyDetails = () => {
     }
 
     try {
-    // Submit to the backend
-    await storeService.addWatchBuyReview(product.slug, formData);
+      await storeService.addWatchBuyReview(product.slug, formData);
+      toast.success("Review submitted!");
+      setShowReviewForm(false);
+      setReviewForm({ name: '', rating: 5, comment: '', image: null });
 
-    toast.success("Review submitted!");
-    setShowReviewForm(false);
-    setReviewForm({ name: '', rating: 5, comment: '', image: null });
-
-    // 🔥 CRITICAL: Re-fetch product details to sync the 'reviews' array
-    const updatedData = await storeService.getWatchBuyDetail(slug!);
-    setProduct(updatedData);
-    setReviews(updatedData.reviews || []);
-
-  } catch (err) {
-    toast.error("Failed to post review");
-  }
+      const updatedData = await storeService.getWatchBuyDetail(slug!);
+      setProduct(updatedData);
+      setReviews(updatedData.reviews || []);
+    } catch (err) {
+      toast.error("Failed to post review");
+    }
   };
 
   if (loading) return <div className="h-screen flex justify-center items-center"><Loader2 className="animate-spin text-pink-500" /></div>;
@@ -202,9 +218,21 @@ const WatchAndBuyDetails = () => {
                 </div>
               </div>
 
+              {/* Updated Action Buttons */}
               <div className="grid grid-cols-2 gap-3 mb-10">
-                <Button onClick={() => addToCart(product, quantity, selectedSize, colorForCart)} variant="outline" className="h-16 uppercase font-black text-xs tracking-widest">Add to Bag</Button>
-                <Button onClick={() => { addToCart(product, quantity, selectedSize, colorForCart); navigate('/cart'); }} className="h-16 bg-zinc-900 text-white uppercase font-black text-xs tracking-widest">Buy Now</Button>
+                <Button 
+                  onClick={() => handleAddToCart('bag')} 
+                  variant="outline" 
+                  className="h-16 uppercase font-black text-xs tracking-widest border-2 border-primary text-primary hover:bg-white transition-all"
+                >
+                  Add to Bag
+                </Button>
+                <Button 
+                  onClick={() => handleAddToCart('buy')} 
+                  className="h-16 bg-zinc-900 text-white uppercase font-black text-xs tracking-widest hover:bg-black transition-all"
+                >
+                  Buy Now
+                </Button>
               </div>
             </div>
           </div>
@@ -259,7 +287,6 @@ const WatchAndBuyDetails = () => {
                       </div>
                     </div>
 
-                    {/* 🔥 NEW: Photo Upload Section */}
                     <div className="space-y-2">
                       <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Add Photo (Optional)</label>
                       <div 
@@ -292,7 +319,6 @@ const WatchAndBuyDetails = () => {
                         {[...Array(5)].map((_, i) => <Star key={i} size={10} className={i < r.rating ? 'fill-current' : 'text-zinc-200'} />)}
                       </div>
                       <p className="text-sm text-zinc-800 font-medium mb-4 italic">"{r.comment}"</p>
-                      {/* 🔥 Display Review Image */}
                       {r.image && <img src={r.image} className="w-24 aspect-[3/4] object-cover mb-4 border border-zinc-100" alt="Review" />}
                       <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">— {r.user_name}</span>
                     </div>
