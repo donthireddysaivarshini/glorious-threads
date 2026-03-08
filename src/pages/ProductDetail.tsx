@@ -265,16 +265,42 @@ const ProductDetail = () => {
                     <TabsTrigger value="reviews" className="bg-transparent rounded-none border-b-2 border-transparent data-[state=active]:border-black text-[11px] uppercase font-bold tracking-widest px-0">Reviews ({reviews.length})</TabsTrigger>
                   </TabsList>
                   
-                  <TabsContent value="details" className="text-zinc-600 text-sm leading-relaxed space-y-6">
-                    <p>{product.description}</p>
-                    <div className="grid grid-cols-2 gap-4 pt-6">
-                      {product.features?.split('\n').map((f:any, i:any) => (
-                        <div key={i} className="flex items-center gap-2 text-[10px] font-bold uppercase text-zinc-400">
-                          <div className="w-1 h-1 bg-pink-500 rounded-full" /> {f}
-                        </div>
-                      ))}
-                    </div>
-                  </TabsContent>
+                  <TabsContent value="details" className="text-zinc-600 text-sm leading-relaxed space-y-8">
+  {/* Description */}
+  <div>
+    <h4 className="text-[10px] font-black uppercase tracking-widest text-black mb-3">Description</h4>
+    <p>{product.description}</p>
+  </div>
+
+  {/* Features */}
+  {product.features && (
+    <div>
+      <h4 className="text-[10px] font-black uppercase tracking-widest text-black mb-3">Key Features</h4>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {product.features.split('\n').filter((f: string) => f.trim() !== '').map((f: any, i: any) => (
+          <div key={i} className="flex items-center gap-2 text-[10px] font-bold uppercase text-zinc-500">
+            <div className="w-1 h-1 bg-pink-500 rounded-full" /> {f}
+          </div>
+        ))}
+      </div>
+    </div>
+  )}
+
+  {/* Care Instructions - ADDED THIS SECTION */}
+  {product.care_instructions && (
+    <div className="pt-4 border-t border-zinc-50">
+      <h4 className="text-[10px] font-black uppercase tracking-widest text-black mb-3">Care Instructions</h4>
+      <div className="space-y-2">
+        {product.care_instructions.split('\n').filter((line: string) => line.trim() !== '').map((line: any, i: any) => (
+          <div key={i} className="flex items-start gap-2 text-[10px] font-bold uppercase text-zinc-400">
+            <span className="text-primary">•</span>
+            <span>{line}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )}
+</TabsContent>
 
                   <TabsContent value="reviews">
                     <div className="flex justify-between items-center mb-6">

@@ -17,7 +17,6 @@ const WatchBuyListingPage = () => {
   
   const [maxPrice, setMaxPrice] = useState(20000);
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
-  // 🔥 Add state for selected colors
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState('newest');
 
@@ -42,17 +41,19 @@ const WatchBuyListingPage = () => {
 
   const filterOptions = useMemo(() => {
     const sizes = new Set<string>();
-    // 🔥 Add a Set for colors
     const colors = new Set<string>();
     let absMax = 0;
+
     videos.forEach(v => {
       if (Number(v.price) > absMax) absMax = Number(v.price);
+      
+      // Extract from the variants array provided by the WatchBuy serializer
       v.variants?.forEach((variant: any) => {
         if (variant.size) sizes.add(variant.size);
-        // 🔥 Extract colors from variants
         if (variant.color) colors.add(variant.color);
       });
     });
+
     return { 
         sizes: Array.from(sizes).sort(), 
         colors: Array.from(colors).sort(), 
@@ -64,27 +65,34 @@ const WatchBuyListingPage = () => {
     let res = [...videos].filter(v => Number(v.price) <= maxPrice);
     
     if (selectedSizes.length > 0) {
-      res = res.filter(v => v.variants?.some((varnt: any) => selectedSizes.includes(varnt.size)));
+      res = res.filter(v => v.variants?.some((vr: any) => selectedSizes.includes(vr.size)));
     }
     
-    // 🔥 Add the color filtering logic
     if (selectedColors.length > 0) {
-      res = res.filter(v => v.variants?.some((varnt: any) => selectedColors.includes(varnt.color)));
+      res = res.filter(v => v.variants?.some((vr: any) => selectedColors.includes(vr.color)));
     }
 
     if (sortBy === 'price-low') res.sort((a, b) => Number(a.price) - Number(b.price));
     if (sortBy === 'price-high') res.sort((a, b) => Number(b.price) - Number(a.price));
+    
     return res;
   }, [videos, maxPrice, selectedSizes, selectedColors, sortBy]);
 
   const FilterSidebar = () => (
     <div className="space-y-12 py-4">
+      {/* Price Filter */}
       <div>
         <h4 className="font-black uppercase text-[11px] tracking-[0.2em] mb-6 text-black">Budget: Up to ₹{maxPrice}</h4>
-        <Slider value={[maxPrice]} onValueChange={(v) => setMaxPrice(v[0])} min={0} max={filterOptions.absMax || 20000} step={500} />
+        <Slider 
+          value={[maxPrice]} 
+          onValueChange={(v) => setMaxPrice(v[0])} 
+          min={0} 
+          max={filterOptions.absMax || 20000} 
+          step={500} 
+        />
       </div>
 
-      {/* 🔥 NEW: Color Filter UI */}
+      {/* Color Filter */}
       {filterOptions.colors.length > 0 && (
         <div>
           <h4 className="font-black uppercase text-[11px] tracking-[0.2em] mb-4 text-black">Colors</h4>
@@ -105,6 +113,7 @@ const WatchBuyListingPage = () => {
         </div>
       )}
 
+      {/* Size Filter */}
       {filterOptions.sizes.length > 0 && (
         <div>
           <h4 className="font-black uppercase text-[11px] tracking-[0.2em] mb-4 text-black">Size</h4>
@@ -115,7 +124,7 @@ const WatchBuyListingPage = () => {
                    checked={selectedSizes.includes(s)} 
                    onCheckedChange={(c) => c ? setSelectedSizes([...selectedSizes, s]) : setSelectedSizes(selectedSizes.filter(x => x !== s))} 
                 />
-                <span className="text-[12px] font-bold text-zinc-500 group-hover:text-black uppercase">{s}</span>
+                <span className="text-[12px] font-bold text-zinc-500 group-hover:text-black uppercase tracking-tight">{s}</span>
               </label>
             ))}
           </div>
@@ -125,7 +134,7 @@ const WatchBuyListingPage = () => {
       <button 
         onClick={() => {
             setSelectedSizes([]); 
-            setSelectedColors([]); // 🔥 Reset colors too
+            setSelectedColors([]);
             setMaxPrice(filterOptions.absMax || 20000);
         }} 
         className="text-[10px] font-black uppercase tracking-widest text-pink-500 underline underline-offset-4"
@@ -138,13 +147,13 @@ const WatchBuyListingPage = () => {
   return (
     <div className="min-h-screen bg-white">
       <Header />
-      <main className="pt-24 md:pt-40 pb-16 px-4 max-w-[1440px] mx-auto">
+      <main className="pt-32 md:pt-40 pb-24 px-4 max-w-[1440px] mx-auto">
         <div className="mb-12">
             <Link to="/" className="inline-flex items-center text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-6 hover:text-black transition-colors">
                <ChevronLeft size={14} className="mr-1" /> Back
             </Link>
-            <h1 className="text-4xl md:text-7xl font-black uppercase tracking-tighter text-black leading-none">Watch & Buy</h1>
-            <p className="text-zinc-400 text-xs font-bold uppercase tracking-[0.3em] mt-4">{filteredVideos.length} Video Looks</p>
+            <h1 className="text-xl md:text-4xl font-black uppercase tracking-tighter text-black leading-none break-words">Watch & Buy</h1>
+            <p className="text-zinc-400 text-xs font-bold uppercase tracking-[0.3em] mt-4 ml-1">{filteredVideos.length} Video Looks</p>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-12">
@@ -160,7 +169,7 @@ const WatchBuyListingPage = () => {
                     <SlidersHorizontal size={14} className="mr-2" /> Filters
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="left" className="w-[320px] bg-white">
+                <SheetContent side="left" className="w-[320px] bg-white border-r-0 shadow-2xl">
                   <SheetHeader className="mb-10 text-left border-b border-zinc-100 pb-6">
                     <SheetTitle className="font-black uppercase text-3xl tracking-tighter">Refine Videos</SheetTitle>
                   </SheetHeader>
@@ -169,13 +178,13 @@ const WatchBuyListingPage = () => {
               </Sheet>
 
               <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-48 border-zinc-200 h-12 rounded-none text-[10px] font-black uppercase tracking-[0.2em]">
+                <SelectTrigger className="w-40 md:w-48 border-zinc-200 h-12 rounded-none text-[10px] font-black uppercase tracking-[0.2em]">
                   <SelectValue placeholder="Sort By" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="newest">Newest First</SelectItem>
-                  <SelectItem value="price-low">Price: Low to High</SelectItem>
-                  <SelectItem value="price-high">Price: High to Low</SelectItem>
+                <SelectContent className="rounded-none">
+                  <SelectItem value="newest" className="text-xs uppercase font-bold tracking-widest">Newest First</SelectItem>
+                  <SelectItem value="price-low" className="text-xs uppercase font-bold tracking-widest">Price: Low to High</SelectItem>
+                  <SelectItem value="price-high" className="text-xs uppercase font-bold tracking-widest">Price: High to Low</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -185,8 +194,12 @@ const WatchBuyListingPage = () => {
                   <Loader2 className="animate-spin text-pink-500 w-10 h-10" />
                   <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Loading Looks</span>
                 </div>
+            ) : filteredVideos.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-40 text-center">
+                    <p className="text-zinc-400 font-bold uppercase text-xs tracking-widest">No videos match your current criteria.</p>
+                </div>
             ) : (
-              <div className="grid grid-cols-2 xl:grid-cols-3 gap-x-6 gap-y-12">
+              <div className="grid grid-cols-2 md:grid-cols-2 xl:grid-cols-3 gap-x-4 md:gap-x-6 gap-y-12 md:gap-y-16">
                 {filteredVideos.map((item, index) => (
                   <WatchBuyCard 
                     key={item.id} 
