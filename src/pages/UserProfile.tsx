@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { 
   Package, MapPin, LogOut, ArrowLeft, Loader2, ChevronDown, 
   ChevronLeft, ChevronRight, Truck, CheckCircle, Clock, AlertCircle, 
-  Trash2, Star, Plus, Pencil, X, Info
+  Trash2, Star, Plus, Pencil, X, Info, Download // Added Download icon
 } from "lucide-react";
 import { toast } from "sonner";
 import { orderService, authService } from "@/services/api";
@@ -26,6 +26,8 @@ interface OrderItem {
 
 interface Order {
   id: number;
+  first_name: string; // Added field
+  last_name: string;  // Added field
   total_amount: string;
   payment_status: string;
   order_status: string;
@@ -122,7 +124,14 @@ const UserProfile = () => {
     finally { setLoadingAddresses(false); }
   };
 
-  // --- HANDLERS ---
+  // --- EXPORT FUNCTION ---
+  const handleExportExcel = () => {
+    // This redirects to your Django admin export URL
+    // Replace /admin/orders/order/ with your actual admin path if different
+    window.location.href = `${import.meta.env.VITE_API_URL.replace('/api', '')}/admin/orders/order/`;
+    toast.info("Redirecting to Admin Export Panel");
+  };
+
   const handleUpdateStatus = async (orderId: number, newStatus: string) => {
     try {
       await orderService.updateOrderStatus(orderId, newStatus);
@@ -142,13 +151,9 @@ const UserProfile = () => {
 
   const handleSaveAddress = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // ✅ Updated: Using Toast instead of browser Alert
     const phoneRegex = /^[0-9]{10}$/;
     if (!phoneRegex.test(addressForm.phone)) {
-      toast.error("Invalid Phone Number", {
-        description: "Please enter exactly 10 digits."
-      });
+      toast.error("Invalid Phone Number", { description: "Please enter exactly 10 digits." });
       return;
     }
 
@@ -204,9 +209,10 @@ const UserProfile = () => {
   if (loadingOrders && !allOrders.length) return <div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin" /></div>;
 
   return (
-    <div className="flex flex-col min-h-screen bg-white "> 
+    <div className="flex flex-col min-h-screen bg-white"> 
     <Header />
-      <div className="container mx-auto px-4 max-w-6xl">
+      {/* ADJUSTED: Added pt-24 to prevent header from cutting content */}
+      <div className="container mx-auto px-4 max-w-6xl pt-24 pb-12">
         <div className="flex flex-col lg:flex-row gap-10">
           <aside className="w-full lg:w-72 space-y-4">
             <div className="bg-white p-6 rounded-3xl border border-pink-100 shadow-sm text-left">
@@ -216,7 +222,6 @@ const UserProfile = () => {
                     </div>
                     <div className="overflow-hidden">
                         <p className="font-bold truncate text-sm">{userProfile?.email}</p>
-                        
                     </div>
                 </div>
                 <nav className="space-y-2">
@@ -238,7 +243,16 @@ const UserProfile = () => {
           <main className="flex-1 bg-white rounded-[2.5rem] p-8 border border-pink-100 shadow-sm min-h-[600px]">
             {activeTab === 'orders' ? (
               <div className="space-y-6">
-                <h2 className="text-xl font-bold uppercase tracking-tight border-b pb-4 text-left">Order History</h2>
+                <div className="flex justify-between items-center border-b pb-4">
+                  <h2 className="text-xl font-bold uppercase tracking-tight text-left">Order History</h2>
+                  {/* EXPORT BUTTON: Only shows for Admin */}
+                  {isAdmin && (
+                    <Button onClick={handleExportExcel} variant="outline" className="h-8 border-zinc-200 text-[10px] font-bold uppercase rounded-full hover:bg-zinc-50">
+                      <Download size={14} className="mr-2" /> Export Excel
+                    </Button>
+                  )}
+                </div>
+
                 {allOrders.length === 0 ? (
                   <div className="text-center py-20">
                     <Package size={48} className="mx-auto text-pink-100 mb-4" />
@@ -279,30 +293,29 @@ const UserProfile = () => {
                             {order.items.map((item, idx) => (
                               <div key={idx} className="flex gap-4 items-center">
                                 <div className="w-16 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 border border-pink-50">
-  {item.image ? (
-    <img 
-      src={item.image.startsWith('http') 
-        ? item.image 
-        : `${import.meta.env.VITE_API_URL.replace('/api', '')}${item.image}`
-      } 
-      className="w-full h-full object-cover" 
-      alt={item.product_name} 
-    />
-  ) : (
-    <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-300">GTD</div>
-  )}
-</div>
+                                  {item.image ? (
+                                    <img 
+                                      src={item.image.startsWith('http') 
+                                        ? item.image 
+                                        : `${import.meta.env.VITE_API_URL.replace('/api', '')}${item.image}`
+                                      } 
+                                      className="w-full h-full object-cover" 
+                                      alt={item.product_name} 
+                                    />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-300">GTD</div>
+                                  )}
+                                </div>
                                 <div className="flex-1">
-  {/* Logic: if is_watch_buy is true, route to /watch-and-buy/, else /product/ */}
-  <Link 
-    to={item.is_watch_buy ? `/watch-and-buy/${item.product_slug}` : `/product/${item.product_slug}`} 
-    className="text-sm font-bold hover:text-pink-500 transition-colors uppercase"
-  >
-    {item.product_name}
-  </Link>
-  <p className="text-[10px] text-gray-400">{item.variant_label}</p>
-  <p className="text-[10px] font-bold uppercase">Qty: {item.quantity}</p>
-</div>
+                                  <Link 
+                                    to={item.is_watch_buy ? `/watch-and-buy/${item.product_slug}` : `/product/${item.product_slug}`} 
+                                    className="text-sm font-bold hover:text-pink-500 transition-colors uppercase"
+                                  >
+                                    {item.product_name}
+                                  </Link>
+                                  <p className="text-[10px] text-gray-400">{item.variant_label}</p>
+                                  <p className="text-[10px] font-bold uppercase">Qty: {item.quantity}</p>
+                                </div>
                                 <p className="font-bold text-sm">₹{item.price}</p>
                               </div>
                             ))}
@@ -319,11 +332,18 @@ const UserProfile = () => {
                             {expandedOrderId === order.id && (
                               <div className="mt-3 p-4 bg-zinc-50 rounded-xl border border-zinc-100 animate-in slide-in-from-top-2">
                                   <p className="text-[10px] font-black uppercase text-zinc-400 mb-1">Shipping To:</p>
-                                  <p className="text-xs font-bold uppercase">{order.shipping_address}</p>
-                                  <p className="text-[10px] text-zinc-500">{order.landmark && `${order.landmark}, `}{order.city}, {order.state}, {order.country} - {order.zip_code}</p>
-                                  <p className="text-[10px] font-bold mt-2 uppercase">Contact: {order.phone}</p>
-                              </div>
-                            )}
+                                  {/* Display the Name here */}
+      <p className="text-xs font-black uppercase text-black">
+        {order.first_name} {order.last_name}
+      </p>
+      
+      <p className="text-xs font-bold uppercase mt-1">{order.shipping_address}</p>
+      <p className="text-[10px] text-zinc-500">
+        {order.landmark && `${order.landmark}, `}{order.city}, {order.state}, {order.country} - {order.zip_code}
+      </p>
+      <p className="text-[10px] font-bold mt-2 uppercase">Contact: {order.phone}</p>
+  </div>
+)}
                           </div>
 
                           {isAdmin && (
@@ -370,6 +390,7 @@ const UserProfile = () => {
                 )}
               </div>
             ) : (
+              // Addresses Tab remains mostly the same as per your note
               <div className="space-y-6 text-left">
                  <div className="flex justify-between items-center border-b pb-4">
                   <h2 className="text-xl font-bold uppercase tracking-tight">Saved Addresses</h2>
@@ -425,7 +446,6 @@ const UserProfile = () => {
                            <button onClick={() => handleEditAddress(addr)} className="p-2 hover:bg-zinc-100 rounded-full transition-all">
                               <Pencil size={16} className="text-primary" />
                            </button>
-                           {/* ✅ Updated to use normal UI modal */}
                            <button onClick={() => setAddressToDelete(addr.id)} className="p-2 hover:bg-red-50 rounded-full transition-all">
                               <Trash2 size={16} className="text-red-400" />
                            </button>
@@ -441,7 +461,7 @@ const UserProfile = () => {
         </div>
       </div>
       
-      {/* ✅ Normal UI Delete Confirmation Modal */}
+      {/* Delete Confirmation Modal */}
       {addressToDelete && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white rounded-[2rem] p-8 max-w-sm w-full shadow-2xl border border-pink-100 animate-in zoom-in-95 duration-200">
