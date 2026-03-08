@@ -41,6 +41,7 @@ interface Order {
   state?: string;
   country?: string;
   zip_code?: string;
+  tracking_link?: string;
 }
 
 interface SavedAddress {
@@ -287,6 +288,18 @@ const UserProfile = () => {
                               {getStatusConfig(order.order_status).icon}
                               <span className="text-[10px] font-bold uppercase">{order.order_status}</span>
                             </div>
+                            {/* ✅ New Tracking Button */}
+    {order.tracking_link && order.order_status !== 'Cancelled' && (
+        <a 
+            href={order.tracking_link} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 px-3 py-1 rounded-full bg-blue-600 text-white text-[10px] font-bold uppercase hover:bg-blue-700 transition-colors"
+        >
+            <Truck size={12} />
+            Track Order
+        </a>
+    )}
                           </div>
 
                           <div className="p-5 space-y-4 text-left">
