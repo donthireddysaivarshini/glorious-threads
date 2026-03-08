@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Instagram, Mail, Phone, MapPin, Clock, Heart } from 'lucide-react';
-import logo from '@/assets/logo.png';
+import logo from '@/assets/logo.jpeg';
 
 const Footer = () => {
   return (
@@ -12,13 +12,13 @@ const Footer = () => {
           <div className="col-span-1 md:col-span-6 lg:col-span-5 flex flex-col items-start space-y-6">
             <Link to="/" className="flex flex-col md:flex-row items-start md:items-center gap-6 transition-transform hover:scale-[1.01] group">
               {/* Logo container with no background or border */}
-              <div className="shrink-0 flex items-center justify-center overflow-hidden">
-                <img 
-                  src={logo} 
-                  alt="GTD Logo" 
-                  className="h-16 w-16 md:h-20 md:w-20 object-contain block" 
-                />
-              </div>
+              <div className="shrink-0 flex items-center justify-center overflow-hidden rounded-full">
+  <img 
+    src={logo} 
+    alt="GTD Logo" 
+    className="h-16 w-16 md:h-20 md:w-20 object-cover rounded-full block" 
+  />
+</div>
               
               <div className="flex flex-col justify-center text-left">
                 <h1 className="font-serif italic text-[20px] md:text-[22px] lg:text-[26px] font-medium text-white leading-tight whitespace-nowrap group-hover:text-accent transition-colors">
