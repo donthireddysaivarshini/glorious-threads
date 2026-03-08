@@ -8,10 +8,18 @@ const Footer = () => {
       <div className="container-luxury mx-auto section-padding">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-12">
 
-          {/* 1. BRAND IDENTITY - Left aligned */}
+          {/* 1. BRAND IDENTITY - Clean Logo without background/border */}
           <div className="col-span-1 md:col-span-6 lg:col-span-5 flex flex-col items-start space-y-6">
-            <Link to="/" className="flex flex-col md:flex-row items-start md:items-center gap-4 transition-transform hover:scale-[1.01] group">
-              <img src={logo} alt="GTD Logo" className="h-20 md:h-24 w-auto object-contain shrink-0 block" />
+            <Link to="/" className="flex flex-col md:flex-row items-start md:items-center gap-6 transition-transform hover:scale-[1.01] group">
+              {/* Logo container with no background or border */}
+              <div className="shrink-0 flex items-center justify-center overflow-hidden">
+                <img 
+                  src={logo} 
+                  alt="GTD Logo" 
+                  className="h-16 w-16 md:h-20 md:w-20 object-contain block" 
+                />
+              </div>
+              
               <div className="flex flex-col justify-center text-left">
                 <h1 className="font-serif italic text-[20px] md:text-[22px] lg:text-[26px] font-medium text-white leading-tight whitespace-nowrap group-hover:text-accent transition-colors">
                   Glorious Threads by Divya
@@ -44,13 +52,13 @@ const Footer = () => {
               <h4 className="font-display text-base font-bold mb-6 text-white uppercase tracking-widest text-left">Contact</h4>
               <div className="space-y-4 text-sm text-white/60 flex flex-col items-start">
                 <div className="flex items-center gap-3 text-left"><Phone className="w-4 h-4 text-accent shrink-0" /><span>+91 85000 85065</span></div>
-                <div className="flex items-center gap-3 text-left"><Mail className="w-4 h-4 text-accent shrink-0" /><span className="italic">gtd@gmail.com</span></div>
+                <div className="flex items-center gap-3 text-left"><Mail className="w-4 h-4 text-accent shrink-0" /><span className="italic">hello.gtdfashion@gmail.com</span></div>
                 <div className="flex items-start gap-3 text-left"><MapPin className="w-4 h-4 text-accent mt-1 shrink-0" /><span>Bangalore, Karnataka, 560102 India</span></div>
               </div>
             </div>
 
             <div className="sm:col-span-1">
-              <h4 className="font-display text-base font-bold mb-6 text-white uppercase tracking-widest text-left">Hours</h4>
+              <h4 className="font-display text-base font-bold mb-6 text-white uppercase tracking-widest text-left">Business Hours</h4>
               <div className="space-y-4 text-sm text-white/60 flex flex-col items-start">
                 <div className="flex items-start gap-3"><Clock className="w-4 h-4 text-accent mt-1 shrink-0" /><div className="space-y-2 text-left"><p>Mon – Sat:<br/><strong>9 AM – 6 PM</strong></p><p>Sun:<br/><strong>9 AM – 1 PM</strong></p></div></div>
               </div>
@@ -71,23 +79,22 @@ const Footer = () => {
           <div className="space-y-2">
             <p>© 2026 Glorious Threads by Divya. All rights reserved.</p>
             
-           {/* StaffArc Branding with Precise Asset Path */}
-<div className="flex justify-center items-center gap-1 text-[11px] font-medium text-white/50 normal-case">
-  Made with <Heart className="inline h-4 w-4 text-red-500 mx-1 fill-red-500" /> by
-  <a
-    href="https://staffarc.in"
-    target="_blank"
-    rel="noopener noreferrer"
-    className="flex items-center gap-1 text-orange-600 hover:underline transition-all"
-  >
-    <img
-      src="https://www.staffarc.in/images/Staffarc-logo.png"
-      alt="StaffArc logo"
-      className="h-5 w-5 object-contain"
-    />
-    StaffArc
-  </a>
-</div> 
+            <div className="flex justify-center items-center gap-1 text-[11px] font-medium text-white/50 normal-case">
+              Made with <Heart className="inline h-4 w-4 text-red-500 mx-1 fill-red-500" /> by
+              <a
+                href="https://staffarc.in"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 text-orange-600 hover:underline transition-all"
+              >
+                <img
+                  src="https://www.staffarc.in/images/Staffarc-logo.png"
+                  alt="StaffArc logo"
+                  className="h-5 w-5 object-contain"
+                />
+                StaffArc
+              </a>
+            </div> 
           </div>
         </div>
       </div>
