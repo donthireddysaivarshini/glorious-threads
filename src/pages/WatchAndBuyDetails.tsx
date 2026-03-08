@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { 
-  Star, Minus, Plus, Loader2, CheckCircle2, ChevronLeft, Camera 
+  Star, Minus, Plus, Loader2, ChevronLeft, Camera, Share2, Truck, RotateCcw 
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -66,23 +66,19 @@ const WatchAndBuyDetails = () => {
     return product.variants.filter((v: any) => v.color === selectedColor);
   }, [product, selectedColor]);
 
-  const discount = product?.original_price 
-    ? Math.round(((product.original_price - product.price) / product.original_price) * 100) 
-    : 0;
+  const savings = product?.original_price ? Math.floor(product.original_price - product.price) : 0;
 
   const colorForCart = useMemo(() => ({
     name: selectedColor,
     hex: "" 
   }), [selectedColor]);
 
-  // Handle Add to Bag vs Buy Now
   const handleAddToCart = (action: 'bag' | 'buy') => {
     if (!selectedSize) {
       toast.error("Please select a size first");
       return;
     }
 
-    // Explicitly add the product_type for backend identification
     const cartProduct = { 
       ...product, 
       product_type: 'WATCH_BUY' 
@@ -108,9 +104,7 @@ const WatchAndBuyDetails = () => {
     formData.append('user_name', reviewForm.name);
     formData.append('rating', reviewForm.rating.toString());
     formData.append('comment', reviewForm.comment);
-    if (reviewForm.image) {
-        formData.append('image', reviewForm.image);
-    }
+    if (reviewForm.image) formData.append('image', reviewForm.image);
 
     try {
       await storeService.addWatchBuyReview(product.slug, formData);
@@ -132,46 +126,57 @@ const WatchAndBuyDetails = () => {
   return (
     <div className="min-h-screen bg-white">
       <Header />
-      <main className="pt-24 md:pt-32 pb-10">
+      <main className="pt-24 md:pt-40 pb-24 md:pb-10">
         <div className="max-w-[1400px] mx-auto px-4 md:px-10">
           
-          <Link to="/watch-and-buy" className="inline-flex items-center text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-black mb-8 transition-colors">
-            <ChevronLeft size={14} className="mr-1" /> Back
-          </Link>
-
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16">
-            {/* LEFT: VIDEO PLAYER */}
-            <div className="lg:col-span-6">
-              <div className="aspect-[9/16] bg-black relative rounded-[40px] overflow-hidden shadow-3xl border-[12px] border-white">
-                <video src={product.video_url} autoPlay loop muted playsInline controls className="w-full h-full object-cover" />
+          <div className="grid grid-cols-1 lg:grid-cols-[450px_1fr] gap-4 lg:gap-12 items-start">
+            
+            {/* LEFT SIDE: VIDEO SECTION */}
+            <div className="lg:sticky lg:top-40 space-y-4">
+              <div className="aspect-[3/4] bg-black relative rounded-[2rem] overflow-hidden group shadow-2xl w-full flex items-center justify-center border-4 border-zinc-50">
+                <video 
+                  src={product.video_url} 
+                  autoPlay 
+                  loop 
+                  muted 
+                  playsInline 
+                  controls 
+                  className="w-full h-full object-cover" 
+                />
+                <div className="absolute bottom-4 right-4 flex gap-2">
+                  <button className="bg-white/90 p-3 rounded-full shadow-sm hover:bg-zinc-100"><Share2 size={18} /></button>
+                </div>
               </div>
             </div>
 
-            {/* RIGHT: CONTENT */}
-            <div className="lg:col-span-6 flex flex-col pt-2">
+            {/* RIGHT SIDE: DETAILS SECTION */}
+            <div className="flex flex-col pt-2 max-w-2xl">
               <div className="mb-6">
-                <h1 className="text-3xl md:text-5xl font-serif font-bold tracking-tight text-zinc-800 mb-4">{product.name}</h1>
-                
-                <div className="flex items-center gap-4 py-6 border-y border-zinc-100">
-                  <span className="text-3xl font-extrabold text-black">₹{Number(product.price).toLocaleString('en-IN')}</span>
+                <h1 className="text-xl md:text-3xl font-bold tracking-tight text-zinc-800 mb-1">{product.name}</h1>
+                <p className="text-sm text-zinc-400 font-medium uppercase tracking-widest mb-4">Watch & Buy Collection</p>
+                <div className="flex items-center gap-3 py-4 border-y border-zinc-100">
+                  <span className="text-2xl font-extrabold text-black">₹{Number(product.price).toLocaleString('en-IN')}</span>
                   {product.original_price && (
                     <>
-                      <span className="text-xl text-zinc-300 line-through">₹{Number(product.original_price).toLocaleString('en-IN')}</span>
-                      <span className="text-pink-500 font-extrabold text-sm uppercase">{discount}% OFF</span>
+                      <span className="text-lg text-zinc-300 line-through">₹{Number(product.original_price).toLocaleString('en-IN')}</span>
+                      <span className="text-pink-500 font-extrabold text-sm uppercase">₹{savings} OFF</span>
                     </>
                   )}
                 </div>
+                <p className="text-[10px] font-bold text-zinc-400 uppercase mt-2 tracking-widest">Inclusive of all taxes</p>
               </div>
 
               {/* Color Selection */}
-              <div className="my-8">
-                <span className="text-[11px] font-bold uppercase tracking-widest text-zinc-700 block mb-4">Select Color</span>
+              <div className="mb-8">
+                <span className="text-[11px] font-bold uppercase tracking-widest text-zinc-700 block mb-4">
+                  Select Color {selectedColor ? `: ${selectedColor}` : '(Required)'}
+                </span>
                 <div className="flex gap-3">
                   {uniqueColors.map((color: any) => (
                     <button 
                       key={color} 
-                      onClick={() => setSelectedColor(color)}
-                      className={`px-6 py-3 border-2 text-[10px] font-bold uppercase tracking-widest transition-all
+                      onClick={() => {setSelectedColor(color); setSelectedSize("");}}
+                      className={`px-5 py-2.5 border-2 text-[10px] font-bold uppercase tracking-widest transition-all
                         ${selectedColor === color ? 'bg-black text-white border-black' : 'bg-white border-zinc-100 hover:border-black'}`}
                     >
                       {color}
@@ -182,7 +187,11 @@ const WatchAndBuyDetails = () => {
 
               {/* Size Selection */}
               <div className="mb-8">
-                <span className="text-[11px] font-bold uppercase tracking-widest text-zinc-700 block mb-4">Select Size</span>
+                <div className="flex justify-between mb-4">
+                  <span className="text-[11px] font-bold uppercase tracking-widest text-zinc-700">
+                    Size {selectedSize ? `: ${selectedSize}` : '(Required)'}
+                  </span>
+                </div>
                 <div className="flex flex-wrap gap-2">
                   {availableSizesForColor.map((v: any) => (
                     <button 
@@ -199,16 +208,6 @@ const WatchAndBuyDetails = () => {
                 </div>
               </div>
 
-              {/* Stylist Note */}
-              <div className="mb-8 bg-zinc-50 p-6 rounded-3xl border border-zinc-100">
-                <h4 className="text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-800 mb-2 flex items-center">
-                  <CheckCircle2 size={14} className="mr-2 text-pink-500" /> Stylist Note
-                </h4>
-                <p className="text-sm text-zinc-600 italic leading-relaxed">
-                  {product.variants.find((v: any) => v.color === selectedColor)?.color_note || "Expertly curated for your collection."}
-                </p>
-              </div>
-
               <div className="mb-10">
                 <span className="text-[11px] font-bold uppercase tracking-widest text-zinc-700 block mb-4">Quantity</span>
                 <div className="flex items-center w-fit border-2 border-zinc-100 bg-zinc-50/50">
@@ -218,114 +217,133 @@ const WatchAndBuyDetails = () => {
                 </div>
               </div>
 
-              {/* Updated Action Buttons */}
-              <div className="grid grid-cols-2 gap-3 mb-10">
+              {/* Action Buttons */}
+              <div className="relative bg-white grid grid-cols-2 gap-3 mb-10">
                 <Button 
-                  onClick={() => handleAddToCart('bag')} 
-                  variant="outline" 
-                  className="h-16 uppercase font-black text-xs tracking-widest border-2 border-primary text-primary hover:bg-white transition-all"
+                    onClick={() => handleAddToCart('bag')} 
+                    className="h-14 rounded-none uppercase text-[10px] font-extrabold tracking-widest bg-white border-2 border-primary text-primary hover:bg-white transition-none"
                 >
-                  Add to Bag
+                    Add to Bag
                 </Button>
                 <Button 
-                  onClick={() => handleAddToCart('buy')} 
-                  className="h-16 bg-zinc-900 text-white uppercase font-black text-xs tracking-widest hover:bg-black transition-all"
+                    onClick={() => handleAddToCart('buy')} 
+                    className="h-14 rounded-none uppercase text-[10px] font-extrabold tracking-widest bg-primary text-white hover:bg-primary transition-none shadow-lg shadow-primary/20"
                 >
-                  Buy Now
+                    Buy Now
                 </Button>
               </div>
-            </div>
-          </div>
 
-          <div className="mt-20 border-t border-zinc-100 pt-16 max-w-4xl">
-            <Tabs defaultValue="details">
-              <TabsList className="bg-transparent border-none gap-10 mb-10">
-                <TabsTrigger value="details" className="bg-transparent rounded-none border-b-2 border-transparent data-[state=active]:border-black text-[11px] uppercase font-bold tracking-widest">Product Details</TabsTrigger>
-                <TabsTrigger value="reviews" className="bg-transparent rounded-none border-b-2 border-transparent data-[state=active]:border-black text-[11px] uppercase font-bold tracking-widest">Reviews ({reviews.length})</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="details" className="text-zinc-600 text-sm leading-relaxed space-y-6">
-                <p className="italic">"{product.description}"</p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-6">
-                  {product.features && (
-                    <div className="flex items-start gap-2 text-[10px] font-bold uppercase text-zinc-400">
-                      <div className="w-1 h-1 bg-pink-500 rounded-full mt-1.5" /> {product.features}
+              <div className="space-y-4 pt-8 border-t border-zinc-50 text-[11px] font-bold uppercase tracking-widest text-zinc-500">
+                <div className="flex items-center gap-3"><Truck size={18} strokeWidth={1.5} /> Free Shipping & Returns</div>
+                <div className="flex items-center gap-3"><RotateCcw size={18} strokeWidth={1.5}/> 100% Quality Guaranteed</div>
+              </div>
+
+              {/* Tabs Section matching standard product page */}
+              <div className="mt-12 border-t border-zinc-100 pt-8">
+                <Tabs defaultValue="details">
+                  <TabsList className="bg-transparent border-none gap-10 mb-6">
+                    <TabsTrigger value="details" className="bg-transparent rounded-none border-b-2 border-transparent data-[state=active]:border-black text-[11px] uppercase font-bold tracking-widest px-0">Product Details</TabsTrigger>
+                    <TabsTrigger value="reviews" className="bg-transparent rounded-none border-b-2 border-transparent data-[state=active]:border-black text-[11px] uppercase font-bold tracking-widest px-0">Reviews ({reviews.length})</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="details" className="text-zinc-600 text-sm leading-relaxed space-y-8">
+                    <div>
+                        <h4 className="text-[10px] font-black uppercase tracking-widest text-black mb-3">Description</h4>
+                        <p className="italic">"{product.description}"</p>
                     </div>
-                  )}
-                </div>
-              </TabsContent>
 
-              <TabsContent value="reviews">
-                <div className="flex justify-between items-center mb-10">
-                  <h3 className="text-sm font-bold uppercase tracking-widest">Experience</h3>
-                  <button onClick={() => setShowReviewForm(!showReviewForm)} className="text-[10px] font-black underline uppercase text-pink-500">
-                    {showReviewForm ? "Cancel" : "Write a Review"}
-                  </button>
-                </div>
-
-                {showReviewForm && (
-                  <form onSubmit={handleReviewSubmit} className="bg-zinc-50 p-8 mb-12 space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Your Name</label>
-                        <input placeholder="Enter name" required className="w-full p-4 text-xs border-none bg-white outline-none" value={reviewForm.name} onChange={e => setReviewForm({...reviewForm, name: e.target.value})} />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Rating</label>
-                        <div className="flex gap-2 bg-white p-3 h-[50px] items-center">
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <Star 
-                              key={star} 
-                              size={20} 
-                              className={`cursor-pointer transition-colors ${ (hoveredStar || reviewForm.rating) >= star ? 'fill-[#F4C430] text-[#F4C430]' : 'text-zinc-200' }`}
-                              onMouseEnter={() => setHoveredStar(star)}
-                              onMouseLeave={() => setHoveredStar(0)}
-                              onClick={() => setReviewForm({ ...reviewForm, rating: star })}
-                            />
-                          ))}
+                    {product.features && (
+                        <div>
+                            <h4 className="text-[10px] font-black uppercase tracking-widest text-black mb-3">Key Features</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                {product.features.split('\n').filter((f: string) => f.trim() !== '').map((f: any, i: any) => (
+                                    <div key={i} className="flex items-center gap-2 text-[10px] font-bold uppercase text-zinc-500">
+                                        <div className="w-1 h-1 bg-pink-500 rounded-full" /> {f}
+                                    </div>
+                                ))}
+                            </div>
                         </div>
-                      </div>
+                    )}
+
+                    {product.care_instructions && (
+                        <div className="pt-4 border-t border-zinc-50">
+                            <h4 className="text-[10px] font-black uppercase tracking-widest text-black mb-3">Care Instructions</h4>
+                            <div className="space-y-2">
+                                {product.care_instructions.split('\n').filter((line: string) => line.trim() !== '').map((line: any, i: any) => (
+                                    <div key={i} className="flex items-start gap-2 text-[10px] font-bold uppercase text-zinc-400">
+                                        <span className="text-primary">•</span>
+                                        <span>{line}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                  </TabsContent>
+
+                  <TabsContent value="reviews">
+                    <div className="flex justify-between items-center mb-6">
+                      <h3 className="text-sm font-bold uppercase tracking-widest">User Experiences</h3>
+                      <button onClick={() => setShowReviewForm(!showReviewForm)} className="text-[10px] font-black underline uppercase">
+                        {showReviewForm ? "Cancel" : "Write a Review"}
+                      </button>
                     </div>
 
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Add Photo (Optional)</label>
-                      <div 
-                        onClick={() => fileInputRef.current?.click()} 
-                        className="w-full py-10 border-2 border-dashed border-zinc-200 bg-white flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-zinc-50 transition-colors"
-                      >
-                        <Camera size={24} className="text-zinc-400" />
-                        <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
-                          {reviewForm.image ? reviewForm.image.name : "Click to upload your Look"}
-                        </span>
-                        <input 
-                          type="file" 
-                          ref={fileInputRef} 
-                          className="hidden" 
-                          accept="image/*" 
-                          onChange={(e) => setReviewForm({...reviewForm, image: e.target.files?.[0] || null})} 
-                        />
-                      </div>
-                    </div>
+                    {showReviewForm && (
+                      <form onSubmit={handleReviewSubmit} className="bg-zinc-50 p-6 mb-10 space-y-6 animate-in fade-in">
+                        <div className="grid grid-cols-1 gap-6">
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Your Name</label>
+                            <input placeholder="Enter name" required className="w-full p-4 text-xs border-none bg-white outline-none" value={reviewForm.name} onChange={e => setReviewForm({...reviewForm, name: e.target.value})} />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Rating</label>
+                            <div className="flex gap-2 bg-white p-3 h-[50px] items-center">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <Star 
+                                  key={star} 
+                                  size={20} 
+                                  className={`cursor-pointer transition-colors ${ (hoveredStar || reviewForm.rating) >= star ? 'fill-[#F4C430] text-[#F4C430]' : 'text-zinc-200' }`}
+                                  onMouseEnter={() => setHoveredStar(star)}
+                                  onMouseLeave={() => setHoveredStar(0)}
+                                  onClick={() => setReviewForm({ ...reviewForm, rating: star })}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        </div>
 
-                    <textarea placeholder="Tell us about the quality..." required className="w-full p-4 text-xs border-none bg-white h-32 outline-none" value={reviewForm.comment} onChange={e => setReviewForm({...reviewForm, comment: e.target.value})} />
-                    <Button type="submit" className="bg-black text-white text-[10px] h-14 px-10 uppercase font-bold tracking-widest">Submit Feedback</Button>
-                  </form>
-                )}
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Add Photo (Optional)</label>
+                          <div onClick={() => fileInputRef.current?.click()} className="w-full py-6 border-2 border-dashed border-zinc-200 bg-white flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-zinc-50 transition-colors">
+                            <Camera size={24} className="text-zinc-400" />
+                            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
+                              {reviewForm.image ? reviewForm.image.name : "Click to upload a photo"}
+                            </span>
+                            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={(e) => setReviewForm({ ...reviewForm, image: e.target.files?.[0] || null })} />
+                          </div>
+                        </div>
 
-                <div className="space-y-12">
-                  {reviews.map(r => (
-                    <div key={r.id} className="border-b border-zinc-50 pb-8">
-                      <div className="flex text-[#F4C430] mb-3">
-                        {[...Array(5)].map((_, i) => <Star key={i} size={10} className={i < r.rating ? 'fill-current' : 'text-zinc-200'} />)}
-                      </div>
-                      <p className="text-sm text-zinc-800 font-medium mb-4 italic">"{r.comment}"</p>
-                      {r.image && <img src={r.image} className="w-24 aspect-[3/4] object-cover mb-4 border border-zinc-100" alt="Review" />}
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">— {r.user_name}</span>
+                        <textarea placeholder="Tell us about the quality..." required className="w-full p-4 text-xs border-none bg-white h-32 outline-none" value={reviewForm.comment} onChange={e => setReviewForm({...reviewForm, comment: e.target.value})} />
+                        <Button type="submit" className="bg-black text-white text-[10px] h-14 px-10 uppercase font-bold tracking-widest">Submit Feedback</Button>
+                      </form>
+                    )}
+
+                    <div className="space-y-8">
+                      {reviews.map(r => (
+                        <div key={r.id} className="border-b border-zinc-50 pb-6">
+                          <div className="flex text-[#F4C430] mb-3">
+                            {[...Array(5)].map((_, i) => <Star key={i} size={10} className={i < r.rating ? 'fill-current' : 'text-zinc-200'} />)}
+                          </div>
+                          <p className="text-sm text-zinc-800 font-medium mb-4 italic">"{r.comment}"</p>
+                          {r.image && <img src={r.image} className="w-24 aspect-[3/4] object-cover mb-4 border border-zinc-100" alt="Review" />}
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">— {r.user_name}</span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </TabsContent>
-            </Tabs>
+                  </TabsContent>
+                </Tabs>
+              </div>
+            </div>
           </div>
         </div>
       </main>
