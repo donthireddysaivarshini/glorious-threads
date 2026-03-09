@@ -213,7 +213,7 @@ const UserProfile = () => {
     <div className="flex flex-col min-h-screen bg-white"> 
     <Header />
       {/* ADJUSTED: Added pt-24 to prevent header from cutting content */}
-      <div className="container mx-auto px-4 max-w-6xl pt-24 pb-12">
+      <div className="container mx-auto px-4 max-w-6xl pt-40 pb-14">
         <div className="flex flex-col lg:flex-row gap-10">
           <aside className="w-full lg:w-72 space-y-4">
             <div className="bg-white p-6 rounded-3xl border border-pink-100 shadow-sm text-left">
