@@ -98,7 +98,25 @@ const ProductDetail = () => {
       toast.error(err.detail || "Error posting review"); 
     }
   };
+const handleShare = async () => {
+  const shareData = {
+    title: product.title,
+    text: `Check out this ${product.title} on Watch & Buy!`,
+    url: window.location.href,
+  };
 
+  try {
+    if (navigator.share) {
+      await navigator.share(shareData);
+    } else {
+      // Fallback: Copy to clipboard if Web Share API isn't available
+      await navigator.clipboard.writeText(window.location.href);
+      toast.success("Link copied to clipboard!");
+    }
+  } catch (err) {
+    console.error("Error sharing:", err);
+  }
+};
   // Inside ProductDetail.tsx
 
 const handleAddToCart = (action: 'bag' | 'buy') => {
@@ -167,8 +185,13 @@ const handleAddToCart = (action: 'bag' | 'buy') => {
                   alt="" 
                 />
                 <div className="absolute bottom-4 right-4 flex gap-2">
-                  <button className="bg-white/90 p-3 rounded-full shadow-sm hover:bg-zinc-100"><Share2 size={18} /></button>
-                </div>
+  <button 
+    onClick={handleShare}
+    className="bg-white/90 p-3 rounded-full shadow-sm hover:bg-zinc-100 transition-colors"
+  >
+    <Share2 size={18} />
+  </button>
+</div>
               </div>
 
               <div className="hidden md:flex gap-2 overflow-x-auto scrollbar-hide">
