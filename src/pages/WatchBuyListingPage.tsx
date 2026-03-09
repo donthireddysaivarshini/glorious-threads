@@ -43,69 +43,39 @@ const WatchBuyListingPage = () => {
     const sizes = new Set<string>();
     const colors = new Set<string>();
     let absMax = 0;
-
     videos.forEach(v => {
       if (Number(v.price) > absMax) absMax = Number(v.price);
-      
-      // Extract from the variants array provided by the WatchBuy serializer
       v.variants?.forEach((variant: any) => {
         if (variant.size) sizes.add(variant.size);
         if (variant.color) colors.add(variant.color);
       });
     });
-
-    return { 
-        sizes: Array.from(sizes).sort(), 
-        colors: Array.from(colors).sort(), 
-        absMax 
-    };
+    return { sizes: Array.from(sizes).sort(), colors: Array.from(colors).sort(), absMax };
   }, [videos]);
 
   const filteredVideos = useMemo(() => {
     let res = [...videos].filter(v => Number(v.price) <= maxPrice);
-    
-    if (selectedSizes.length > 0) {
-      res = res.filter(v => v.variants?.some((vr: any) => selectedSizes.includes(vr.size)));
-    }
-    
-    if (selectedColors.length > 0) {
-      res = res.filter(v => v.variants?.some((vr: any) => selectedColors.includes(vr.color)));
-    }
-
+    if (selectedSizes.length > 0) res = res.filter(v => v.variants?.some((vr: any) => selectedSizes.includes(vr.size)));
+    if (selectedColors.length > 0) res = res.filter(v => v.variants?.some((vr: any) => selectedColors.includes(vr.color)));
     if (sortBy === 'price-low') res.sort((a, b) => Number(a.price) - Number(b.price));
     if (sortBy === 'price-high') res.sort((a, b) => Number(b.price) - Number(a.price));
-    
     return res;
   }, [videos, maxPrice, selectedSizes, selectedColors, sortBy]);
 
   const FilterSidebar = () => (
     <div className="space-y-12 py-4">
-      {/* Price Filter */}
       <div>
         <h4 className="font-black uppercase text-[11px] tracking-[0.2em] mb-6 text-black">Budget: Up to ₹{maxPrice}</h4>
-        <Slider 
-          value={[maxPrice]} 
-          onValueChange={(v) => setMaxPrice(v[0])} 
-          min={0} 
-          max={filterOptions.absMax || 20000} 
-          step={500} 
-        />
+        <Slider value={[maxPrice]} onValueChange={(v) => setMaxPrice(v[0])} min={0} max={filterOptions.absMax || 20000} step={500} />
       </div>
 
-      {/* Color Filter */}
       {filterOptions.colors.length > 0 && (
         <div>
           <h4 className="font-black uppercase text-[11px] tracking-[0.2em] mb-4 text-black">Colors</h4>
           <div className="flex flex-wrap gap-2">
             {filterOptions.colors.map(c => (
-              <button 
-                key={c} 
-                onClick={() => setSelectedColors(p => p.includes(c) ? p.filter(x => x !== c) : [...p, c])} 
-                className={`px-4 py-2 rounded-full text-[10px] font-black border transition-all 
-                  ${selectedColors.includes(c) 
-                    ? 'bg-black text-white border-black shadow-lg' 
-                    : 'bg-zinc-50 text-zinc-400 border-transparent hover:border-zinc-200'}`}
-              >
+              <button key={c} onClick={() => setSelectedColors(p => p.includes(c) ? p.filter(x => x !== c) : [...p, c])} 
+                className={`px-4 py-2 rounded-full text-[10px] font-black border transition-all ${selectedColors.includes(c) ? 'bg-black text-white border-black shadow-lg' : 'bg-zinc-50 text-zinc-400 border-transparent hover:border-zinc-200'}`}>
                 {c}
               </button>
             ))}
@@ -113,17 +83,13 @@ const WatchBuyListingPage = () => {
         </div>
       )}
 
-      {/* Size Filter */}
       {filterOptions.sizes.length > 0 && (
         <div>
           <h4 className="font-black uppercase text-[11px] tracking-[0.2em] mb-4 text-black">Size</h4>
           <div className="grid grid-cols-2 gap-3">
             {filterOptions.sizes.map(s => (
               <label key={s} className="flex items-center gap-3 cursor-pointer group">
-                <Checkbox 
-                   checked={selectedSizes.includes(s)} 
-                   onCheckedChange={(c) => c ? setSelectedSizes([...selectedSizes, s]) : setSelectedSizes(selectedSizes.filter(x => x !== s))} 
-                />
+                <Checkbox checked={selectedSizes.includes(s)} onCheckedChange={(c) => c ? setSelectedSizes([...selectedSizes, s]) : setSelectedSizes(selectedSizes.filter(x => x !== s))} />
                 <span className="text-[12px] font-bold text-zinc-500 group-hover:text-black uppercase tracking-tight">{s}</span>
               </label>
             ))}
@@ -131,14 +97,7 @@ const WatchBuyListingPage = () => {
         </div>
       )}
       
-      <button 
-        onClick={() => {
-            setSelectedSizes([]); 
-            setSelectedColors([]);
-            setMaxPrice(filterOptions.absMax || 20000);
-        }} 
-        className="text-[10px] font-black uppercase tracking-widest text-pink-500 underline underline-offset-4"
-      >
+      <button onClick={() => {setSelectedSizes([]); setSelectedColors([]); setMaxPrice(filterOptions.absMax || 20000);}} className="text-[10px] font-black uppercase tracking-widest text-pink-500 underline underline-offset-4">
         Reset Filters
       </button>
     </div>
@@ -199,15 +158,19 @@ const WatchBuyListingPage = () => {
                     <p className="text-zinc-400 font-bold uppercase text-xs tracking-widest">No videos match your current criteria.</p>
                 </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-2 xl:grid-cols-3 gap-x-4 md:gap-x-6 gap-y-12 md:gap-y-16">
-                {filteredVideos.map((item, index) => (
-                  <WatchBuyCard 
-                    key={item.id} 
-                    item={item} 
-                    index={index} 
-                  />
-                ))}
-              </div>
+              /* GRID FIX: Matches Category Page columns and adds items-start */
+              <div className="grid grid-cols-2 md:grid-cols-2 xl:grid-cols-3 gap-x-4 gap-y-20 items-start">
+  {filteredVideos.map((item, index) => (
+    <div key={item.id} className="relative w-full overflow-visible">
+       {/* 1. scale-[0.8] makes it 20% smaller to create a 'buffer' 
+          2. mb-[-10%] pulls the next row's layout up if needed
+       */}
+       <div className="transform scale-[0.85] md:scale-100 origin-top mb-[-15%] md:mb-0">
+          <WatchBuyCard item={item} index={index} />
+       </div>
+    </div>
+  ))}
+</div>
             )}
           </div>
         </div>

@@ -98,52 +98,48 @@ const ProductDetail = () => {
       toast.error(err.detail || "Error posting review"); 
     }
   };
-const handleShare = async () => {
-  const shareData = {
-    title: product.title,
-    text: `Check out this ${product.title} on Watch & Buy!`,
-    url: window.location.href,
+
+  const handleShare = async () => {
+    const shareData = {
+      title: product.title,
+      text: `Check out this ${product.title} on Watch & Buy!`,
+      url: window.location.href,
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(window.location.href);
+        toast.success("Link copied to clipboard!");
+      }
+    } catch (err) {
+      console.error("Error sharing:", err);
+    }
   };
 
-  try {
-    if (navigator.share) {
-      await navigator.share(shareData);
-    } else {
-      // Fallback: Copy to clipboard if Web Share API isn't available
-      await navigator.clipboard.writeText(window.location.href);
-      toast.success("Link copied to clipboard!");
+  const handleAddToCart = (action: 'bag' | 'buy') => {
+    if (!selectedColor) {
+      toast.error("Please select a color first");
+      return;
     }
-  } catch (err) {
-    console.error("Error sharing:", err);
-  }
-};
-  // Inside ProductDetail.tsx
+    if (!selectedSize) {
+      toast.error("Please select a size first");
+      return;
+    }
 
-const handleAddToCart = (action: 'bag' | 'buy') => {
-  if (!selectedColor) {
-    toast.error("Please select a color first");
-    return;
-  }
-  if (!selectedSize) {
-    toast.error("Please select a size first");
-    return;
-  }
+    const variantImage = product.images.find((i: any) => 
+      i.color === selectedColor.id || i.color_name === selectedColor.name
+    )?.url || product.images[0]?.url;
 
-  // 1. Find the specific image for this color
-  // We look for an image where the color matches the selectedColor's ID or name
-  const variantImage = product.images.find((i: any) => 
-    i.color === selectedColor.id || i.color_name === selectedColor.name
-  )?.url || product.images[0]?.url;
+    addToCart(product, quantity, selectedSize, selectedColor, variantImage);
 
-  // 2. Pass that specific image URL to addToCart
-  addToCart(product, quantity, selectedSize, selectedColor, variantImage);
-
-  if (action === 'buy') {
-    navigate('/checkout');
-  } else {
-    toast.success("Added to bag");
-  }
-};
+    if (action === 'buy') {
+      navigate('/checkout');
+    } else {
+      toast.success("Added to bag");
+    }
+  };
 
   const savings = product?.original_price ? Math.floor(product.original_price - displayPrice) : 0;
 
@@ -156,12 +152,11 @@ const handleAddToCart = (action: 'bag' | 'buy') => {
       <main className="pt-24 md:pt-40 pb-24 md:pb-10">
         <div className="max-w-[1400px] mx-auto px-4 md:px-10">
           
-          {/* grid-cols changed to control width and gap-4 to move columns closer */}
           <div className="grid grid-cols-1 lg:grid-cols-[450px_1fr] gap-4 lg:gap-8 items-start">
             
             {/* LEFT SIDE: FIXED IMAGE SECTION ON DESKTOP */}
             <div className="lg:sticky lg:top-40 space-y-4">
-              <div className="aspect-[3/4] bg-zinc-50 relative overflow-hidden group lg:max-h-[550px] w-full flex items-center justify-center">
+              <div className="aspect-[3/4] min-h-[500px] bg-zinc-50 relative overflow-hidden group w-full flex items-center justify-center p-8">
                 {displayImages.length > 1 && (
                   <>
                     <button 
@@ -181,17 +176,17 @@ const handleAddToCart = (action: 'bag' | 'buy') => {
 
                 <img 
                   src={displayImages[currentImage]?.url} 
-                  className="w-full h-full object-contain transition-opacity duration-300" 
+                  className="max-w-full max-h-full object-contain transition-opacity duration-300" 
                   alt="" 
                 />
                 <div className="absolute bottom-4 right-4 flex gap-2">
-  <button 
-    onClick={handleShare}
-    className="bg-white/90 p-3 rounded-full shadow-sm hover:bg-zinc-100 transition-colors"
-  >
-    <Share2 size={18} />
-  </button>
-</div>
+                  <button 
+                    onClick={handleShare}
+                    className="bg-white/90 p-3 rounded-full shadow-sm hover:bg-zinc-100 transition-colors"
+                  >
+                    <Share2 size={18} />
+                  </button>
+                </div>
               </div>
 
               <div className="hidden md:flex gap-2 overflow-x-auto scrollbar-hide">
@@ -270,7 +265,6 @@ const handleAddToCart = (action: 'bag' | 'buy') => {
                 </div>
               </div>
 
-              {/* Action Buttons: Changed from fixed/floating on mobile to natural relative layout */}
               <div className="relative bg-white grid grid-cols-2 gap-3 mb-10">
                 <Button 
                     onClick={() => handleAddToCart('bag')} 
@@ -299,41 +293,38 @@ const handleAddToCart = (action: 'bag' | 'buy') => {
                   </TabsList>
                   
                   <TabsContent value="details" className="text-zinc-600 text-sm leading-relaxed space-y-8">
-  {/* Description */}
-  <div>
-    <h4 className="text-[10px] font-black uppercase tracking-widest text-black mb-3">Description</h4>
-    <p>{product.description}</p>
-  </div>
+                    <div>
+                      <h4 className="text-[10px] font-black uppercase tracking-widest text-black mb-3">Description</h4>
+                      <p>{product.description}</p>
+                    </div>
 
-  {/* Features */}
-  {product.features && (
-    <div>
-      <h4 className="text-[10px] font-black uppercase tracking-widest text-black mb-3">Key Features</h4>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {product.features.split('\n').filter((f: string) => f.trim() !== '').map((f: any, i: any) => (
-          <div key={i} className="flex items-center gap-2 text-[10px] font-bold uppercase text-zinc-500">
-            <div className="w-1 h-1 bg-pink-500 rounded-full" /> {f}
-          </div>
-        ))}
-      </div>
-    </div>
-  )}
+                    {product.features && (
+                      <div>
+                        <h4 className="text-[10px] font-black uppercase tracking-widest text-black mb-3">Key Features</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {product.features.split('\n').filter((f: string) => f.trim() !== '').map((f: any, i: any) => (
+                            <div key={i} className="flex items-center gap-2 text-[10px] font-bold uppercase text-zinc-500">
+                              <div className="w-1 h-1 bg-pink-500 rounded-full" /> {f}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
-  {/* Care Instructions - ADDED THIS SECTION */}
-  {product.care_instructions && (
-    <div className="pt-4 border-t border-zinc-50">
-      <h4 className="text-[10px] font-black uppercase tracking-widest text-black mb-3">Care Instructions</h4>
-      <div className="space-y-2">
-        {product.care_instructions.split('\n').filter((line: string) => line.trim() !== '').map((line: any, i: any) => (
-          <div key={i} className="flex items-start gap-2 text-[10px] font-bold uppercase text-zinc-400">
-            <span className="text-primary">•</span>
-            <span>{line}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  )}
-</TabsContent>
+                    {product.care_instructions && (
+                      <div className="pt-4 border-t border-zinc-50">
+                        <h4 className="text-[10px] font-black uppercase tracking-widest text-black mb-3">Care Instructions</h4>
+                        <div className="space-y-2">
+                          {product.care_instructions.split('\n').filter((line: string) => line.trim() !== '').map((line: any, i: any) => (
+                            <div key={i} className="flex items-start gap-2 text-[10px] font-bold uppercase text-zinc-400">
+                              <span className="text-primary">•</span>
+                              <span>{line}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </TabsContent>
 
                   <TabsContent value="reviews">
                     <div className="flex justify-between items-center mb-6">
