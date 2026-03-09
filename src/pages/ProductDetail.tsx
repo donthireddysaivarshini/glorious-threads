@@ -99,23 +99,33 @@ const ProductDetail = () => {
     }
   };
 
-  const handleAddToCart = (action: 'bag' | 'buy') => {
-    if (!selectedColor) {
-        toast.error("Please select a color first");
-        return;
-    }
-    if (!selectedSize) {
-      toast.error("Please select a size first");
-      return;
-    }
-  
-    addToCart(product, quantity, selectedSize, selectedColor);
-    if (action === 'buy') {
-      navigate('/checkout');
-    } else {
-      toast.success("Added to bag");
-    }
-  };
+  // Inside ProductDetail.tsx
+
+const handleAddToCart = (action: 'bag' | 'buy') => {
+  if (!selectedColor) {
+    toast.error("Please select a color first");
+    return;
+  }
+  if (!selectedSize) {
+    toast.error("Please select a size first");
+    return;
+  }
+
+  // 1. Find the specific image for this color
+  // We look for an image where the color matches the selectedColor's ID or name
+  const variantImage = product.images.find((i: any) => 
+    i.color === selectedColor.id || i.color_name === selectedColor.name
+  )?.url || product.images[0]?.url;
+
+  // 2. Pass that specific image URL to addToCart
+  addToCart(product, quantity, selectedSize, selectedColor, variantImage);
+
+  if (action === 'buy') {
+    navigate('/checkout');
+  } else {
+    toast.success("Added to bag");
+  }
+};
 
   const savings = product?.original_price ? Math.floor(product.original_price - displayPrice) : 0;
 

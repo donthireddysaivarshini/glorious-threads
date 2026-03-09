@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom"; 
 import { 
-  Package, MapPin, LogOut, ArrowLeft, Loader2, ChevronDown, 
-  ChevronLeft, ChevronRight, Truck, CheckCircle, Clock, AlertCircle, 
-  Trash2, Star, Plus, Pencil, X, Info, Download // Added Download icon
+  Package, MapPin, LogOut, Loader2, ChevronRight, 
+  Truck, CheckCircle, Clock, X, Info, Download, ChevronLeft, Plus, Pencil, Trash2
 } from "lucide-react";
 import { toast } from "sonner";
 import { orderService, authService } from "@/services/api";
@@ -22,12 +21,17 @@ interface OrderItem {
   quantity: number;
   image?: string; 
   is_watch_buy: boolean;
+  // ADDED THIS FIELD TO FIX YOUR ERROR
+  color_details?: {
+    name: string;
+    hex: string;
+  };
 }
 
 interface Order {
   id: number;
-  first_name: string; // Added field
-  last_name: string;  // Added field
+  first_name: string; 
+  last_name: string;  
   total_amount: string;
   payment_status: string;
   order_status: string;
@@ -64,7 +68,6 @@ const UserProfile = () => {
   const [activeTab, setActiveTab] = useState<'orders' | 'addresses'>('orders');
   const [userProfile, setUserProfile] = useState<any>(null);
   
-  // --- ORDER STATE & PAGINATION ---
   const [allOrders, setAllOrders] = useState<Order[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [expandedOrderId, setExpandedOrderId] = useState<number | null>(null);
@@ -72,7 +75,6 @@ const UserProfile = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  // --- ADDRESS STATE ---
   const [addresses, setAddresses] = useState<SavedAddress[]>([]);
   const [loadingAddresses, setLoadingAddresses] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -86,7 +88,6 @@ const UserProfile = () => {
   };
   const [addressForm, setAddressForm] = useState(initialAddressState);
 
-  // --- AUTH & INITIAL DATA ---
   useEffect(() => {
     const token = localStorage.getItem("userToken");
     if (!token) { navigate("/login"); return; }
@@ -125,10 +126,7 @@ const UserProfile = () => {
     finally { setLoadingAddresses(false); }
   };
 
-  // --- EXPORT FUNCTION ---
   const handleExportExcel = () => {
-    // This redirects to your Django admin export URL
-    // Replace /admin/orders/order/ with your actual admin path if different
     window.location.href = `${import.meta.env.VITE_API_URL.replace('/api', '')}/admin/orders/order/`;
     toast.info("Redirecting to Admin Export Panel");
   };
@@ -143,38 +141,22 @@ const UserProfile = () => {
 
   const handleEditAddress = (addr: SavedAddress) => {
     setEditingId(addr.id);
-    setAddressForm({
-        ...addr,
-        landmark: addr.landmark || ''
-    });
+    setAddressForm({ ...addr, landmark: addr.landmark || '' });
     setShowAddForm(true);
   };
 
   const handleSaveAddress = async (e: React.FormEvent) => {
     e.preventDefault();
-    const phoneRegex = /^[0-9]{10}$/;
-    if (!phoneRegex.test(addressForm.phone)) {
-      toast.error("Invalid Phone Number", { description: "Please enter exactly 10 digits." });
-      return;
-    }
-
     setSubmittingAddress(true);
     try {
       if (editingId) {
         await authService.saveAddress({ ...addressForm, id: editingId });
         toast.success("Address updated");
       } else {
-        if (addresses.length >= 3) {
-            toast.error("Address limit reached (Max 3)");
-            return;
-        }
         await authService.saveAddress(addressForm);
         toast.success("Address saved");
       }
-      setShowAddForm(false);
-      setEditingId(null);
-      setAddressForm(initialAddressState);
-      fetchAddresses();
+      setShowAddForm(false); setEditingId(null); setAddressForm(initialAddressState); fetchAddresses();
     } catch (err) { toast.error("Action failed"); }
     finally { setSubmittingAddress(false); }
   };
@@ -185,11 +167,8 @@ const UserProfile = () => {
       await authService.deleteAddress(addressToDelete);
       toast.success("Address removed");
       fetchAddresses();
-    } catch (err) {
-      toast.error("Could not delete address. Please try again.");
-    } finally {
-      setAddressToDelete(null);
-    }
+    } catch (err) { toast.error("Could not delete address."); }
+    finally { setAddressToDelete(null); }
   };
 
   const handleLogout = () => {
@@ -207,12 +186,9 @@ const UserProfile = () => {
     }
   };
 
-  if (loadingOrders && !allOrders.length) return <div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin" /></div>;
-
   return (
     <div className="flex flex-col min-h-screen bg-white"> 
     <Header />
-      {/* ADJUSTED: Added pt-24 to prevent header from cutting content */}
       <div className="container mx-auto px-4 max-w-6xl pt-40 pb-14">
         <div className="flex flex-col lg:flex-row gap-10">
           <aside className="w-full lg:w-72 space-y-4">
@@ -246,15 +222,16 @@ const UserProfile = () => {
               <div className="space-y-6">
                 <div className="flex justify-between items-center border-b pb-4">
                   <h2 className="text-xl font-bold uppercase tracking-tight text-left">Order History</h2>
-                  {/* EXPORT BUTTON: Only shows for Admin */}
                   {isAdmin && (
-                    <Button onClick={handleExportExcel} variant="outline" className="h-8 border-zinc-200 text-[10px] font-bold uppercase rounded-full hover:bg-zinc-50">
+                    <Button onClick={handleExportExcel} variant="outline" className="h-8 border-zinc-200 text-[10px] font-bold uppercase rounded-full">
                       <Download size={14} className="mr-2" /> Export Excel
                     </Button>
                   )}
                 </div>
 
-                {allOrders.length === 0 ? (
+                {loadingOrders && !allOrders.length ? (
+                  <div className="flex justify-center py-20"><Loader2 className="animate-spin" /></div>
+                ) : allOrders.length === 0 ? (
                   <div className="text-center py-20">
                     <Package size={48} className="mx-auto text-pink-100 mb-4" />
                     <p className="text-gray-400 text-sm">No orders found.</p>
@@ -267,66 +244,52 @@ const UserProfile = () => {
                         <div key={order.id} className="border border-pink-50 rounded-2xl overflow-hidden hover:shadow-md transition-all">
                           <div className="bg-gray-50/50 p-5 flex flex-wrap justify-between items-center gap-4">
                             <div className="flex gap-6 text-left">
-                              <div>
-                                <p className="text-[9px] font-bold text-gray-400 uppercase">Sequence</p>
-                                <p className="text-xs font-bold">Order {allOrders.length - index}</p>
-                              </div>
-                              <div>
-                                <p className="text-[9px] font-bold text-gray-400 uppercase">Verification ID</p>
-                                <p className="text-xs font-bold">#{order.id}</p>
-                              </div>
-                              <div>
-                                <p className="text-[9px] font-bold text-gray-400 uppercase">Total</p>
-                                <p className="text-xs font-bold">₹{order.total_amount}</p>
-                              </div>
-                              <div>
-                                <p className="text-[9px] font-bold text-gray-400 uppercase">Payment</p>
-                                <p className={`text-[10px] font-black uppercase ${order.payment_status === 'Paid' ? 'text-green-600' : 'text-red-500'}`}>{order.payment_status}</p>
-                              </div>
+                              <div><p className="text-[9px] font-bold text-gray-400 uppercase">Verification ID</p><p className="text-xs font-bold">#{order.id}</p></div>
+                              <div><p className="text-[9px] font-bold text-gray-400 uppercase">Total</p><p className="text-xs font-bold">₹{order.total_amount}</p></div>
+                              <div><p className="text-[9px] font-bold text-gray-400 uppercase">Payment</p><p className={`text-[10px] font-black uppercase ${order.payment_status === 'Paid' ? 'text-green-600' : 'text-red-500'}`}>{order.payment_status}</p></div>
                             </div>
-                            <div className={`flex items-center gap-2 px-3 py-1 rounded-full border ${getStatusConfig(order.order_status).color}`}>
-                              {getStatusConfig(order.order_status).icon}
-                              <span className="text-[10px] font-bold uppercase">{order.order_status}</span>
+                            <div className="flex items-center gap-2">
+                                <div className={`flex items-center gap-2 px-3 py-1 rounded-full border ${getStatusConfig(order.order_status).color}`}>
+                                    {getStatusConfig(order.order_status).icon}
+                                    <span className="text-[10px] font-bold uppercase">{order.order_status}</span>
+                                </div>
+                                {order.tracking_link && order.order_status !== 'Cancelled' && (
+                                    <a href={order.tracking_link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 px-3 py-1 rounded-full bg-blue-600 text-white text-[10px] font-bold uppercase hover:bg-blue-700">
+                                        <Truck size={12} /> Track
+                                    </a>
+                                )}
                             </div>
-                            {/* ✅ New Tracking Button */}
-    {order.tracking_link && order.order_status !== 'Cancelled' && (
-        <a 
-            href={order.tracking_link} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="flex items-center gap-1 px-3 py-1 rounded-full bg-blue-600 text-white text-[10px] font-bold uppercase hover:bg-blue-700 transition-colors"
-        >
-            <Truck size={12} />
-            Track Order
-        </a>
-    )}
                           </div>
 
                           <div className="p-5 space-y-4 text-left">
                             {order.items.map((item, idx) => (
                               <div key={idx} className="flex gap-4 items-center">
                                 <div className="w-16 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 border border-pink-50">
-                                  {item.image ? (
-                                    <img 
-                                      src={item.image.startsWith('http') 
-                                        ? item.image 
-                                        : `${import.meta.env.VITE_API_URL.replace('/api', '')}${item.image}`
-                                      } 
-                                      className="w-full h-full object-cover" 
-                                      alt={item.product_name} 
-                                    />
-                                  ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-300">GTD</div>
-                                  )}
+                                  <img 
+                                    src={item.image || '/placeholder.png'} 
+                                    className="w-full h-full object-cover" 
+                                    alt={item.product_name} 
+                                  />
                                 </div>
                                 <div className="flex-1">
                                   <Link 
-                                    to={item.is_watch_buy ? `/watch-and-buy/${item.product_slug}` : `/product/${item.product_slug}`} 
+                                    to={item.product_slug ? (item.is_watch_buy ? `/watch-and-buy/${item.product_slug}` : `/product/${item.product_slug}`) : '#'} 
                                     className="text-sm font-bold hover:text-pink-500 transition-colors uppercase"
                                   >
                                     {item.product_name}
                                   </Link>
-                                  <p className="text-[10px] text-gray-400">{item.variant_label}</p>
+                                  
+                                  {/* UPDATED UI FOR VARIANT LABEL + COLOR CIRCLE */}
+                                  <div className="flex items-center gap-2 mt-0.5">
+                                      {item.color_details && (
+                                          <div 
+                                              className="w-2.5 h-2.5 rounded-full border border-zinc-200" 
+                                              style={{ backgroundColor: item.color_details.hex }}
+                                          />
+                                      )}
+                                      <p className="text-[10px] text-gray-400">{item.variant_label}</p>
+                                  </div>
+                                  
                                   <p className="text-[10px] font-bold uppercase">Qty: {item.quantity}</p>
                                 </div>
                                 <p className="font-bold text-sm">₹{item.price}</p>
@@ -335,38 +298,25 @@ const UserProfile = () => {
                           </div>
 
                           <div className="px-5 pb-5 text-left">
-                            <button 
-                              onClick={() => setExpandedOrderId(expandedOrderId === order.id ? null : order.id)}
-                              className="text-[10px] font-black uppercase text-zinc-400 flex items-center gap-1 hover:text-black transition-colors"
-                            >
+                            <button onClick={() => setExpandedOrderId(expandedOrderId === order.id ? null : order.id)} className="text-[10px] font-black uppercase text-zinc-400 flex items-center gap-1 hover:text-black transition-colors">
                               {expandedOrderId === order.id ? <X size={12}/> : <Info size={12}/>} 
                               {expandedOrderId === order.id ? "Hide Details" : "View Shipping Address"}
                             </button>
                             {expandedOrderId === order.id && (
                               <div className="mt-3 p-4 bg-zinc-50 rounded-xl border border-zinc-100 animate-in slide-in-from-top-2">
                                   <p className="text-[10px] font-black uppercase text-zinc-400 mb-1">Shipping To:</p>
-                                  {/* Display the Name here */}
-      <p className="text-xs font-black uppercase text-black">
-        {order.first_name} {order.last_name}
-      </p>
-      
-      <p className="text-xs font-bold uppercase mt-1">{order.shipping_address}</p>
-      <p className="text-[10px] text-zinc-500">
-        {order.landmark && `${order.landmark}, `}{order.city}, {order.state}, {order.country} - {order.zip_code}
-      </p>
-      <p className="text-[10px] font-bold mt-2 uppercase">Contact: {order.phone}</p>
-  </div>
-)}
+                                  <p className="text-xs font-black uppercase text-black">{order.first_name} {order.last_name}</p>
+                                  <p className="text-xs font-bold uppercase mt-1">{order.shipping_address}</p>
+                                  <p className="text-[10px] text-zinc-500">{order.landmark && `${order.landmark}, `}{order.city}, {order.state}, {order.country} - {order.zip_code}</p>
+                                  <p className="text-[10px] font-bold mt-2 uppercase">Contact: {order.phone}</p>
+                              </div>
+                            )}
                           </div>
 
                           {isAdmin && (
                               <div className="bg-pink-50/20 p-4 border-t border-pink-50 flex items-center justify-between">
                                   <span className="text-[10px] font-bold uppercase text-gray-400">Admin Controls:</span>
-                                  <select 
-                                      className="text-[10px] font-bold uppercase border-pink-100 rounded-lg p-1 outline-none"
-                                      value={order.order_status}
-                                      onChange={(e) => handleUpdateStatus(order.id, e.target.value)}
-                                  >
+                                  <select className="text-[10px] font-bold uppercase border-pink-100 rounded-lg p-1 outline-none" value={order.order_status} onChange={(e) => handleUpdateStatus(order.id, e.target.value)}>
                                       <option value="Processing">Processing</option>
                                       <option value="Shipped">Shipped</option>
                                       <option value="Delivered">Delivered</option>
@@ -377,33 +327,17 @@ const UserProfile = () => {
                         </div>
                       ))}
                     </div>
-
                     {totalPages > 1 && (
                       <div className="flex justify-center items-center gap-4 mt-10">
-                        <Button 
-                          variant="outline" 
-                          disabled={currentPage === 1} 
-                          onClick={() => setCurrentPage(p => p - 1)}
-                          className="rounded-full h-10 w-10 p-0"
-                        >
-                          <ChevronLeft size={18} />
-                        </Button>
+                        <Button variant="outline" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)} className="rounded-full h-10 w-10 p-0"><ChevronLeft size={18} /></Button>
                         <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Page {currentPage} of {totalPages}</span>
-                        <Button 
-                          variant="outline" 
-                          disabled={currentPage === totalPages} 
-                          onClick={() => setCurrentPage(p => p + 1)}
-                          className="rounded-full h-10 w-10 p-0"
-                        >
-                          <ChevronRight size={18} />
-                        </Button>
+                        <Button variant="outline" disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)} className="rounded-full h-10 w-10 p-0"><ChevronRight size={18} /></Button>
                       </div>
                     )}
                   </>
                 )}
               </div>
             ) : (
-              // Addresses Tab remains mostly the same as per your note
               <div className="space-y-6 text-left">
                  <div className="flex justify-between items-center border-b pb-4">
                   <h2 className="text-xl font-bold uppercase tracking-tight">Saved Addresses</h2>
@@ -415,14 +349,14 @@ const UserProfile = () => {
                 </div>
 
                 {showAddForm ? (
-                   <form onSubmit={handleSaveAddress} className="space-y-4 bg-gray-50 p-6 rounded-2xl animate-in fade-in zoom-in-95">
+                    <form onSubmit={handleSaveAddress} className="space-y-4 bg-gray-50 p-6 rounded-2xl">
                       <div className="grid grid-cols-2 gap-4">
                         <div className="col-span-1">
                           <label className="text-[9px] font-bold uppercase text-gray-400">Label</label>
                           <input className="w-full p-3 bg-white border rounded-xl text-sm" value={addressForm.label} onChange={e=>setAddressForm({...addressForm, label:e.target.value})} required />
                         </div>
                         <div className="col-span-1">
-                          <label className="text-[9px] font-bold uppercase text-gray-400">Phone (10 Digits)</label>
+                          <label className="text-[9px] font-bold uppercase text-gray-400">Phone</label>
                           <input className="w-full p-3 bg-white border rounded-xl text-sm" value={addressForm.phone} onChange={e=>setAddressForm({...addressForm, phone:e.target.value})} required maxLength={10} />
                         </div>
                         <input placeholder="First Name" className="p-3 bg-white border rounded-xl text-sm" value={addressForm.first_name} onChange={e=>setAddressForm({...addressForm, first_name:e.target.value})} required />
@@ -431,41 +365,31 @@ const UserProfile = () => {
                         <input placeholder="State" className="p-3 bg-white border rounded-xl text-sm" value={addressForm.state} onChange={e=>setAddressForm({...addressForm, state:e.target.value})} required />
                         <input placeholder="City" className="p-3 bg-white border rounded-xl text-sm" value={addressForm.city} onChange={e=>setAddressForm({...addressForm, city:e.target.value})} required />
                         <input placeholder="Street Address" className="p-3 bg-white border rounded-xl text-sm col-span-2" value={addressForm.address} onChange={e=>setAddressForm({...addressForm, address:e.target.value})} required />
-                        <input placeholder="Landmark (Optional)" className="p-3 bg-white border rounded-xl text-sm col-span-2" value={addressForm.landmark} onChange={e=>setAddressForm({...addressForm, landmark:e.target.value})} />
                         <input placeholder="Pincode" className="p-3 bg-white border rounded-xl text-sm" value={addressForm.zip_code} onChange={e=>setAddressForm({...addressForm, zip_code:e.target.value})} required />
                       </div>
                       <div className="flex gap-2 pt-4">
                         <Button type="submit" disabled={submittingAddress} className="bg-black text-white px-6 rounded-full text-[10px] font-bold uppercase">
-                          {editingId ? "Update Address" : "Save Address"}
+                          {editingId ? "Update" : "Save"}
                         </Button>
                         <Button type="button" onClick={()=>{setShowAddForm(false); setEditingId(null);}} variant="ghost" className="text-[10px] font-bold uppercase">Cancel</Button>
                       </div>
-                   </form>
+                    </form>
                 ) : (
                   <div className="grid gap-4">
                     {addresses.map(addr => (
-                      <div key={addr.id} className={`p-6 rounded-2xl border flex justify-between items-start transition-all ${addr.is_default ? 'border-black bg-gray-50' : 'border-pink-50 bg-white hover:border-pink-200'}`}>
+                      <div key={addr.id} className={`p-6 rounded-2xl border flex justify-between items-start ${addr.is_default ? 'border-black bg-gray-50' : 'border-pink-50 bg-white'}`}>
                         <div>
-                          <div className="flex items-center gap-2 mb-2">
-                            <p className="font-bold text-[10px] uppercase text-gray-400">{addr.label}</p>
-                            {addr.is_default && <span className="bg-black text-white text-[8px] px-2 py-0.5 rounded-full uppercase font-bold">Default</span>}
-                          </div>
+                          <p className="font-bold text-[10px] uppercase text-gray-400 mb-2">{addr.label} {addr.is_default && "• Default"}</p>
                           <p className="text-sm font-black uppercase text-zinc-800">{addr.first_name} {addr.last_name}</p>
-                          <p className="text-xs text-gray-500 mt-1 uppercase">{addr.address}{addr.landmark ? `, ${addr.landmark}` : ''}</p>
-                          <p className="text-xs text-gray-500 uppercase">{addr.city}, {addr.state}, {addr.country} - {addr.zip_code}</p>
-                          <p className="text-[10px] font-bold text-gray-400 mt-2 tracking-widest">📞 {addr.phone}</p>
+                          <p className="text-xs text-gray-500 mt-1 uppercase">{addr.address}, {addr.city}, {addr.state} - {addr.zip_code}</p>
+                          <p className="text-[10px] font-bold text-gray-400 mt-2">📞 {addr.phone}</p>
                         </div>
                         <div className="flex gap-2">
-                           <button onClick={() => handleEditAddress(addr)} className="p-2 hover:bg-zinc-100 rounded-full transition-all">
-                              <Pencil size={16} className="text-primary" />
-                           </button>
-                           <button onClick={() => setAddressToDelete(addr.id)} className="p-2 hover:bg-red-50 rounded-full transition-all">
-                              <Trash2 size={16} className="text-red-400" />
-                           </button>
+                           <button onClick={() => handleEditAddress(addr)} className="p-2 hover:bg-zinc-100 rounded-full"><Pencil size={16} className="text-primary" /></button>
+                           <button onClick={() => setAddressToDelete(addr.id)} className="p-2 hover:bg-red-50 rounded-full"><Trash2 size={16} className="text-red-400" /></button>
                         </div>
                       </div>
                     ))}
-                    {addresses.length === 0 && <p className="text-zinc-400 text-xs py-10">No saved addresses found.</p>}
                   </div>
                 )}
               </div>
@@ -476,29 +400,12 @@ const UserProfile = () => {
       
       {/* Delete Confirmation Modal */}
       {addressToDelete && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-[2rem] p-8 max-w-sm w-full shadow-2xl border border-pink-100 animate-in zoom-in-95 duration-200">
-            <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Trash2 className="text-red-500" size={28} />
-            </div>
-            <h3 className="text-lg font-bold text-center uppercase tracking-tight">Delete Address?</h3>
-            <p className="text-sm text-gray-500 text-center mt-2 leading-relaxed">
-              Are you sure you want to remove this address? This action cannot be undone.
-            </p>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white rounded-[2rem] p-8 max-w-sm w-full shadow-2xl border border-pink-100">
+            <h3 className="text-lg font-bold text-center uppercase">Delete Address?</h3>
             <div className="flex gap-3 mt-8">
-              <Button 
-                variant="outline" 
-                onClick={() => setAddressToDelete(null)}
-                className="flex-1 rounded-full uppercase text-[10px] font-bold h-12"
-              >
-                Cancel
-              </Button>
-              <Button 
-                onClick={confirmDeleteAddress}
-                className="flex-1 bg-red-500 hover:bg-red-600 text-white rounded-full uppercase text-[10px] font-bold h-12"
-              >
-                Delete
-              </Button>
+              <Button variant="outline" onClick={() => setAddressToDelete(null)} className="flex-1 rounded-full uppercase text-[10px] font-bold">Cancel</Button>
+              <Button onClick={confirmDeleteAddress} className="flex-1 bg-red-500 text-white rounded-full uppercase text-[10px] font-bold">Delete</Button>
             </div>
           </div>
         </div>

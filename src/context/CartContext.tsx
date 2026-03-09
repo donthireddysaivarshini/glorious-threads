@@ -16,7 +16,7 @@ interface CartItem {
 
 interface CartContextType {
   cartItems: CartItem[];
-  addToCart: (product: any, quantity: number, size: string, color: { name: string; hex: string }) => void;
+  addToCart: (product: any, quantity: number, size: string, color: { name: string; hex: string },variantImage?: string) => void;
   removeFromCart: (id: string) => void;
   updateQuantity: (id: string, delta: number) => void;
   clearCart: () => void;
@@ -35,35 +35,43 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     localStorage.setItem('gtd_cart', JSON.stringify(cartItems));
   }, [cartItems]);
 
-  const addToCart = (product: any, quantity: number, size: string, color: { name: string; hex: string }) => {
-    setCartItems((prev) => {
-      const variantId = `${product.id}-${color.name}-${size}`;
-      const existingItem = prev.find((item) => item.id === variantId);
+// Inside CartProvider in CartContext.tsx
 
-      if (existingItem) {
-        return prev.map((item) =>
-          item.id === variantId ? { ...item, quantity: item.quantity + quantity } : item
-        );
-      }
+const addToCart = (
+  product: any, 
+  quantity: number, 
+  size: string, 
+  color: { name: string; hex: string; id?: any }, // added id just in case
+  variantImage?: string // <--- Add this parameter
+) => {
+  setCartItems((prev) => {
+    const variantId = `${product.id}-${color.name}-${size}`;
+    const existingItem = prev.find((item) => item.id === variantId);
 
-      // Logic to determine if it's a video product or standard product
-      const isWatchBuy = product.product_type === 'WATCH_BUY' || !!product.video_url || !!product.video_file;
+    if (existingItem) {
+      return prev.map((item) =>
+        item.id === variantId ? { ...item, quantity: item.quantity + quantity } : item
+      );
+    }
 
-      const newItem: CartItem = {
-        id: variantId,
-        productId: product.id,
-        name: product.name || product.title,
-        price: Number(product.price),
-        image: product.thumbnail || (product.images?.[0]?.url || product.images?.[0] || ''),
-        quantity,
-        selectedSize: size,
-        selectedColor: color,
-        slug: product.slug,
-        product_type: isWatchBuy ? 'WATCH_BUY' : 'REGULAR'
-      };
-      return [...prev, newItem];
-    });
-  };
+    const isWatchBuy = product.product_type === 'WATCH_BUY' || !!product.video_url || !!product.video_file;
+
+    const newItem: CartItem = {
+      id: variantId,
+      productId: product.id,
+      name: product.name || product.title,
+      price: Number(product.price),
+      // Use overrideImage if provided, else fallback to default logic
+      image: variantImage || product.thumbnail || (product.images?.[0]?.url || product.images?.[0] || ''),
+      quantity,
+      selectedSize: size,
+      selectedColor: color,
+      slug: product.slug,
+      product_type: isWatchBuy ? 'WATCH_BUY' : 'REGULAR'
+    };
+    return [...prev, newItem];
+  });
+};
 
   const removeFromCart = (id: string) => {
     setCartItems((prev) => prev.filter((item) => item.id !== id));
