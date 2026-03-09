@@ -92,6 +92,24 @@ const WatchAndBuyDetails = () => {
       toast.success("Added to bag");
     }
   };
+  const handleShare = async () => {
+    const shareData = {
+      title: product.name,
+      text: `Check out ${product.name} on Watch & Buy!`,
+      url: window.location.href,
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(window.location.href);
+        toast.success("Link copied to clipboard!");
+      }
+    } catch (err) {
+      console.error("Error sharing:", err);
+    }
+  };
 
   const handleReviewSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -129,11 +147,11 @@ const WatchAndBuyDetails = () => {
       <main className="pt-24 md:pt-40 pb-24 md:pb-10">
         <div className="max-w-[1400px] mx-auto px-4 md:px-10">
           
-          <div className="grid grid-cols-1 lg:grid-cols-[450px_1fr] gap-4 lg:gap-12 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-[500px_1fr] gap-10 lg:gap-20 items-start">
             
-            {/* LEFT SIDE: VIDEO SECTION */}
-            <div className="lg:sticky lg:top-40 space-y-4">
-              <div className="aspect-[3/4] bg-black relative rounded-[2rem] overflow-hidden group shadow-2xl w-full flex items-center justify-center border-4 border-zinc-50">
+            {/* LEFT SIDE: VIDEO SECTION - UPDATED POSITION AND RATIO */}
+            <div className="lg:sticky lg:top-40">
+              <div className="aspect-[9/16] bg-black relative rounded-3xl overflow-hidden shadow-2xl border-[6px] border-zinc-50 group">
                 <video 
                   src={product.video_url} 
                   autoPlay 
@@ -143,10 +161,16 @@ const WatchAndBuyDetails = () => {
                   controls 
                   className="w-full h-full object-cover" 
                 />
-                <div className="absolute bottom-4 right-4 flex gap-2">
-                  <button className="bg-white/90 p-3 rounded-full shadow-sm hover:bg-zinc-100"><Share2 size={18} /></button>
+                <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button 
+                    onClick={handleShare}
+                    className="bg-white/90 p-3 rounded-full shadow-lg hover:bg-white transition-all transform hover:scale-110"
+                  >
+                    <Share2 size={18} className="text-black" />
+                  </button>
                 </div>
               </div>
+              <p className="text-center mt-4 text-[10px] font-black uppercase tracking-[0.4em] text-zinc-300">Experience the Look</p>
             </div>
 
             {/* RIGHT SIDE: DETAILS SECTION */}
@@ -238,7 +262,7 @@ const WatchAndBuyDetails = () => {
                 <div className="flex items-center gap-3"><RotateCcw size={18} strokeWidth={1.5}/> 100% Quality Guaranteed</div>
               </div>
 
-              {/* Tabs Section matching standard product page */}
+              {/* Tabs Section */}
               <div className="mt-12 border-t border-zinc-100 pt-8">
                 <Tabs defaultValue="details">
                   <TabsList className="bg-transparent border-none gap-10 mb-6">

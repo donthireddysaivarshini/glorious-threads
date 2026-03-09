@@ -47,13 +47,17 @@ const WatchAndBuy = () => {
         </motion.div>
 
         {/* 🔥 HORIZONTAL SCROLLING CONTAINER */}
-        <div className="flex overflow-x-auto gap-4 md:gap-6 pb-8 scrollbar-hide snap-x snap-mandatory">
-          {videos.slice(0, 6).map((item, index) => (
-            <div key={item.id} className="w-[70%] md:w-80 flex-shrink-0 snap-center">
-              <WatchBuyCard item={item} index={index} />
-            </div>
-          ))}
-        </div>
+       {/* 🔥 HORIZONTAL SCROLLING CONTAINER */}
+<div className="flex overflow-x-auto gap-3 md:gap-6 pb-8 scrollbar-hide snap-x snap-mandatory px-1">
+  {videos.slice(0, 6).map((item, index) => (
+    /* CHANGE: w-[45%] instead of w-[70%] 
+       This ensures 2 cards fit + a small gap 
+    */
+    <div key={item.id} className="w-[46%] sm:w-[48%] md:w-80 flex-shrink-0 snap-center">
+      <WatchBuyCard item={item} index={index} />
+    </div>
+  ))}
+</div>
 
         {/* 🔥 VIEW ALL BELOW PRODUCTS: Centered button added here */}
         <div className="flex justify-center mt-10">
