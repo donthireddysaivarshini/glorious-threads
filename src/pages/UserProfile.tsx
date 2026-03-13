@@ -244,22 +244,9 @@ const UserProfile = () => {
                         <div key={order.id} className="border border-pink-50 rounded-2xl overflow-hidden hover:shadow-md transition-all">
                           <div className="bg-gray-50/50 p-5 flex flex-wrap justify-between items-center gap-4">
                             <div className="flex gap-6 text-left">
-                              <div>
-                                <p className="text-[9px] font-bold text-gray-400 uppercase">Sequence</p>
-                                <p className="text-xs font-bold">Order {allOrders.length - index}</p>
-                              </div>
-                              <div>
-                                <p className="text-[9px] font-bold text-gray-400 uppercase">Verification ID</p>
-                                <p className="text-xs font-bold">#{order.id}</p>
-                              </div>
-                              <div>
-                                <p className="text-[9px] font-bold text-gray-400 uppercase">Total</p>
-                                <p className="text-xs font-bold">₹{order.total_amount}</p>
-                              </div>
-                              <div>
-                                <p className="text-[9px] font-bold text-gray-400 uppercase">Payment</p>
-                                <p className={`text-[10px] font-black uppercase ${order.payment_status === 'Paid' ? 'text-green-600' : 'text-red-500'}`}>{order.payment_status}</p>
-                              </div>
+                              <div><p className="text-[9px] font-bold text-gray-400 uppercase">Order ID</p><p className="text-xs font-bold">#{order.id}</p></div>
+                              <div><p className="text-[9px] font-bold text-gray-400 uppercase">Total</p><p className="text-xs font-bold">₹{order.total_amount}</p></div>
+                              <div><p className="text-[9px] font-bold text-gray-400 uppercase">Payment</p><p className={`text-[10px] font-black uppercase ${order.payment_status === 'Paid' ? 'text-green-600' : 'text-red-500'}`}>{order.payment_status}</p></div>
                             </div>
                             <div className="flex items-center gap-2">
                                 <div className={`flex items-center gap-2 px-3 py-1 rounded-full border ${getStatusConfig(order.order_status).color}`}>
