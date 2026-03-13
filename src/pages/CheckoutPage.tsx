@@ -40,7 +40,6 @@ const CheckoutPage = () => {
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
   const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
 
-  // ✅ UPDATED: Removed default 'India' and 'Telangana' for better UX
   const [address, setAddress] = useState({
     firstName: '', 
     lastName: '', 
@@ -53,8 +52,9 @@ const CheckoutPage = () => {
     phone: ''
   });
 
-  // ✅ ADDED: State to track if user has attempted to pay (to trigger validation display)
   const [hasAttemptedPay, setHasAttemptedPay] = useState(false);
+  // Track which specific fields have validation errors
+  const [errors, setErrors] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const init = async () => {
@@ -92,8 +92,27 @@ const CheckoutPage = () => {
     return indiaRegex.test(address.pincode);
   }, [address.pincode]);
 
-  // ✅ UPDATED: Warning only shows if they tried to pay AND the pincode is invalid
   const showPincodeWarning = hasAttemptedPay && !isIndianPincode && address.pincode.length > 0;
+
+  // Form Validation Logic
+  const validateForm = () => {
+    const newErrors: Record<string, boolean> = {};
+    const mandatoryFields = ['firstName', 'lastName', 'country', 'state', 'city', 'street', 'pincode', 'phone'];
+
+    mandatoryFields.forEach(field => {
+      if (!address[field as keyof typeof address]?.trim()) {
+        newErrors[field] = true;
+      }
+    });
+
+    const phoneRegex = /^[0-9]{10}$/;
+    if (address.phone && !phoneRegex.test(address.phone)) {
+      newErrors.phone = true;
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSelectAddress = (addr: any) => {
     setAddress({
@@ -109,6 +128,7 @@ const CheckoutPage = () => {
     });
     setSaveAsDefault(false); 
     setHasAttemptedPay(false);
+    setErrors({}); // Clear errors when selecting saved address
     toast.success(`Address "${addr.label}" selected`);
   };
 
@@ -119,6 +139,7 @@ const CheckoutPage = () => {
     });
     setSaveAsDefault(false);
     setHasAttemptedPay(false);
+    setErrors({});
     toast.info("Enter new delivery details");
   };
 
@@ -138,26 +159,23 @@ const CheckoutPage = () => {
   };
 
   const handlePayment = async () => {
-    // ✅ TRIGGER VALIDATION ON CLICK
     setHasAttemptedPay(true);
+
+    // Strict Validation Check
+    const isValid = validateForm();
+    if (!isValid) {
+      toast.error("Required Fields Missing", {
+        description: "Please fill in all mandatory fields highlighted in red."
+      });
+      // Smart Scroll to the form
+      window.scrollTo({ top: 200, behavior: 'smooth' });
+      return; // Kill the process immediately
+    }
 
     if (!isIndianPincode) {
       toast.error("Shipping Restricted", {
-        description: "Free shipping is only available in India. Please use an Indian Pincode or contact us."
+        description: "Free shipping is only available in India. Please contact us for deliveries outside India."
       });
-      return;
-    }
-
-    const phoneRegex = /^[0-9]{10}$/;
-    if (!phoneRegex.test(address.phone)) {
-      toast.error("Invalid Phone Number", {
-        description: "Please enter exactly 10 digits."
-      });
-      return;
-    }
-
-    if (!address.firstName || !address.phone || !address.street || !address.city || !address.pincode) {
-      toast.error("Please complete required shipping details");
       return;
     }
 
@@ -230,6 +248,10 @@ const CheckoutPage = () => {
     }
   };
 
+  // Helper for conditional error styling
+  const errorStyle = (field: string) => 
+    errors[field] ? "border-red-500 bg-red-50 focus-visible:ring-red-500" : "";
+
   if (loadingInitial) return <div className="h-screen flex items-center justify-center bg-[#FFF8F8]"><Loader2 className="animate-spin text-primary" /></div>;
 
   return (
@@ -271,25 +293,89 @@ const CheckoutPage = () => {
                 <MapPin size={16} className="text-primary" /> Delivery Details
               </h3>
               <div className="grid grid-cols-2 gap-4">
-                <Input placeholder="First Name" value={address.firstName} onChange={e => setAddress({...address, firstName: e.target.value})} />
-                <Input placeholder="Last Name" value={address.lastName} onChange={e => setAddress({...address, lastName: e.target.value})} />
-                
-                <Input className="col-span-2" placeholder="Country / Region" value={address.country} onChange={e => setAddress({...address, country: e.target.value})} />
-                <Input placeholder="State" value={address.state} onChange={e => setAddress({...address, state: e.target.value})} />
-                <Input placeholder="City" value={address.city} onChange={e => setAddress({...address, city: e.target.value})} />
-                <Input className="col-span-2" placeholder="Street Address / House No." value={address.street} onChange={e => setAddress({...address, street: e.target.value})} />
-                <Input className="col-span-2" placeholder="Landmark (Optional)" value={address.landmark} onChange={e => setAddress({...address, landmark: e.target.value})} />
+                <Input 
+                  placeholder="First Name *" 
+                  className={errorStyle('firstName')}
+                  value={address.firstName} 
+                  onChange={e => {
+                    setAddress({...address, firstName: e.target.value});
+                    if (errors.firstName) setErrors({...errors, firstName: false});
+                  }} 
+                />
+                <Input 
+                  placeholder="Last Name *" 
+                  className={errorStyle('lastName')}
+                  value={address.lastName} 
+                  onChange={e => {
+                    setAddress({...address, lastName: e.target.value});
+                    if (errors.lastName) setErrors({...errors, lastName: false});
+                  }} 
+                />
                 
                 <Input 
-                  placeholder="Pincode" 
+                  className={`col-span-2 ${errorStyle('country')}`} 
+                  placeholder="Country / Region *" 
+                  value={address.country} 
+                  onChange={e => {
+                    setAddress({...address, country: e.target.value});
+                    if (errors.country) setErrors({...errors, country: false});
+                  }} 
+                />
+                <Input 
+                  placeholder="State *" 
+                  className={errorStyle('state')}
+                  value={address.state} 
+                  onChange={e => {
+                    setAddress({...address, state: e.target.value});
+                    if (errors.state) setErrors({...errors, state: false});
+                  }} 
+                />
+                <Input 
+                  placeholder="City *" 
+                  className={errorStyle('city')}
+                  value={address.city} 
+                  onChange={e => {
+                    setAddress({...address, city: e.target.value});
+                    if (errors.city) setErrors({...errors, city: false});
+                  }} 
+                />
+                <Input 
+                  className={`col-span-2 ${errorStyle('street')}`} 
+                  placeholder="Street Address / House No. *" 
+                  value={address.street} 
+                  onChange={e => {
+                    setAddress({...address, street: e.target.value});
+                    if (errors.street) setErrors({...errors, street: false});
+                  }} 
+                />
+                <Input 
+                  className="col-span-2" 
+                  placeholder="Landmark (Optional)" 
+                  value={address.landmark} 
+                  onChange={e => setAddress({...address, landmark: e.target.value})} 
+                />
+                
+                <Input 
+                  placeholder="Pincode *" 
+                  className={errorStyle('pincode')}
                   value={address.pincode} 
                   onChange={e => {
                     setAddress({...address, pincode: e.target.value});
-                    if (hasAttemptedPay) setHasAttemptedPay(false); // Clear warning state when user starts typing
+                    if (errors.pincode) setErrors({...errors, pincode: false});
+                    if (hasAttemptedPay) setHasAttemptedPay(false); 
                   }} 
                   maxLength={6} 
                 />
-                <Input className="col-span-2" placeholder="Contact Number" value={address.phone} onChange={e => setAddress({...address, phone: e.target.value})} maxLength={10} />
+                <Input 
+                  className={`col-span-2 ${errorStyle('phone')}`} 
+                  placeholder="Contact Number *" 
+                  value={address.phone} 
+                  onChange={e => {
+                    setAddress({...address, phone: e.target.value});
+                    if (errors.phone) setErrors({...errors, phone: false});
+                  }} 
+                  maxLength={10} 
+                />
               </div>
               
               <div className="flex items-center gap-3 cursor-pointer group" onClick={() => {
@@ -349,7 +435,6 @@ const CheckoutPage = () => {
                 </div>
               </div>
 
-              {/* ✅ HIGH-VISIBILITY WARNING: Shows only after failed Pay attempt */}
               {showPincodeWarning && (
                 <div className="mb-6 p-5 bg-red-600 border-2 border-red-800 rounded-2xl shadow-lg animate-in fade-in zoom-in duration-300">
                   <div className="flex items-start gap-3">
