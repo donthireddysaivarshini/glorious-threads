@@ -40,7 +40,6 @@ const CheckoutPage = () => {
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
   const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
 
-  // ✅ UPDATED: Removed default 'India' and 'Telangana' for better UX
   const [address, setAddress] = useState({
     firstName: '', 
     lastName: '', 
@@ -52,6 +51,10 @@ const CheckoutPage = () => {
     pincode: '', 
     phone: ''
   });
+
+  const [hasAttemptedPay, setHasAttemptedPay] = useState(false);
+  // Track which specific fields have validation errors
+  const [errors, setErrors] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const init = async () => {
@@ -84,6 +87,33 @@ const CheckoutPage = () => {
     return { shipping, discount, finalTotal };
   }, [subtotal, config, appliedCoupon]);
 
+  const isIndianPincode = useMemo(() => {
+    const indiaRegex = /^[1-9][0-9]{5}$/;
+    return indiaRegex.test(address.pincode);
+  }, [address.pincode]);
+
+  const showPincodeWarning = hasAttemptedPay && !isIndianPincode && address.pincode.length > 0;
+
+  // Form Validation Logic
+  const validateForm = () => {
+    const newErrors: Record<string, boolean> = {};
+    const mandatoryFields = ['firstName', 'lastName', 'country', 'state', 'city', 'street', 'pincode', 'phone'];
+
+    mandatoryFields.forEach(field => {
+      if (!address[field as keyof typeof address]?.trim()) {
+        newErrors[field] = true;
+      }
+    });
+
+    const phoneRegex = /^[0-9]{10}$/;
+    if (address.phone && !phoneRegex.test(address.phone)) {
+      newErrors.phone = true;
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSelectAddress = (addr: any) => {
     setAddress({
       firstName: addr.first_name || '',
@@ -97,6 +127,8 @@ const CheckoutPage = () => {
       phone: addr.phone || ''
     });
     setSaveAsDefault(false); 
+    setHasAttemptedPay(false);
+    setErrors({}); // Clear errors when selecting saved address
     toast.success(`Address "${addr.label}" selected`);
   };
 
@@ -106,6 +138,8 @@ const CheckoutPage = () => {
       city: '', street: '', landmark: '', pincode: '', phone: ''
     });
     setSaveAsDefault(false);
+    setHasAttemptedPay(false);
+    setErrors({});
     toast.info("Enter new delivery details");
   };
 
@@ -125,11 +159,13 @@ const CheckoutPage = () => {
   };
 
   const handlePayment = async () => {
-    // ✅ CHANGED: Replaced alert with Toast for Phone Validation
-    const phoneRegex = /^[0-9]{10}$/;
-    if (!phoneRegex.test(address.phone)) {
-      toast.error("Invalid Phone Number", {
-        description: "Please enter exactly 10 digits."
+    setHasAttemptedPay(true);
+
+    // Strict Validation Check
+    const isValid = validateForm();
+    if (!isValid) {
+      toast.error("Required Fields Missing", {
+        description: "Please fill in all mandatory fields highlighted in red."
       });
       // Smart Scroll to the form
       window.scrollTo({ top: 200, behavior: 'smooth' });
@@ -138,7 +174,7 @@ const CheckoutPage = () => {
 
     if (!isIndianPincode) {
       toast.error("Shipping Restricted", {
-        description: "Free shipping is only available in India. Please contact us for deliveries outside India."
+        description: "Free shipping is only available in India. Please use an Indian Pincode or contact us."
       });
       return;
     }
@@ -276,13 +312,70 @@ const CheckoutPage = () => {
                   }} 
                 />
                 
-                <Input className="col-span-2" placeholder="Country / Region" value={address.country} onChange={e => setAddress({...address, country: e.target.value})} />
-                <Input placeholder="State" value={address.state} onChange={e => setAddress({...address, state: e.target.value})} />
-                <Input placeholder="City" value={address.city} onChange={e => setAddress({...address, city: e.target.value})} />
-                <Input className="col-span-2" placeholder="Street Address / House No." value={address.street} onChange={e => setAddress({...address, street: e.target.value})} />
-                <Input className="col-span-2" placeholder="Landmark (Optional)" value={address.landmark} onChange={e => setAddress({...address, landmark: e.target.value})} />
-                <Input placeholder="Pincode" value={address.pincode} onChange={e => setAddress({...address, pincode: e.target.value})} />
-                <Input className="col-span-2" placeholder="Contact Number" value={address.phone} onChange={e => setAddress({...address, phone: e.target.value})} maxLength={10} />
+                <Input 
+                  className={`col-span-2 ${errorStyle('country')}`} 
+                  placeholder="Country / Region *" 
+                  value={address.country} 
+                  onChange={e => {
+                    setAddress({...address, country: e.target.value});
+                    if (errors.country) setErrors({...errors, country: false});
+                  }} 
+                />
+                <Input 
+                  placeholder="State *" 
+                  className={errorStyle('state')}
+                  value={address.state} 
+                  onChange={e => {
+                    setAddress({...address, state: e.target.value});
+                    if (errors.state) setErrors({...errors, state: false});
+                  }} 
+                />
+                <Input 
+                  placeholder="City *" 
+                  className={errorStyle('city')}
+                  value={address.city} 
+                  onChange={e => {
+                    setAddress({...address, city: e.target.value});
+                    if (errors.city) setErrors({...errors, city: false});
+                  }} 
+                />
+                <Input 
+                  className={`col-span-2 ${errorStyle('street')}`} 
+                  placeholder="Street Address / House No. *" 
+                  value={address.street} 
+                  onChange={e => {
+                    setAddress({...address, street: e.target.value});
+                    if (errors.street) setErrors({...errors, street: false});
+                  }} 
+                />
+                <Input 
+                  className="col-span-2" 
+                  placeholder="Landmark (Optional)" 
+                  value={address.landmark} 
+                  onChange={e => setAddress({...address, landmark: e.target.value})} 
+                />
+                
+                <Input 
+                  placeholder="Pincode *" 
+                  className={errorStyle('pincode')}
+                  value={address.pincode} 
+                  onChange={e => {
+                    setAddress({...address, pincode: e.target.value});
+                    if (errors.pincode) setErrors({...errors, pincode: false});
+                    if (hasAttemptedPay) setHasAttemptedPay(false); 
+                  }} 
+                  maxLength={6} 
+                />
+                <Input 
+                  className={`col-span-2 ${errorStyle('phone')}`} 
+                  placeholder="Contact Number *" 
+                  value={address.phone} 
+                  onChange={e => {
+                    setAddress({...address, phone: e.target.value});
+                    if (errors.phone) setErrors({...errors, phone: false});
+                  }} 
+                  maxLength={10} 
+                />
               </div>
               
               <div className="flex items-center gap-3 cursor-pointer group" onClick={() => {
@@ -341,6 +434,33 @@ const CheckoutPage = () => {
                   <span className="text-black">{formatPrice(totals.finalTotal)}</span>
                 </div>
               </div>
+
+              {showPincodeWarning && (
+                <div className="mb-6 p-5 bg-red-600 border-2 border-red-800 rounded-2xl shadow-lg animate-in fade-in zoom-in duration-300">
+                  <div className="flex items-start gap-3">
+                    <div className="bg-white p-1 rounded-full shrink-0">
+                      <ShieldCheck size={20} className="text-red-600" />
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-[12px] leading-tight text-white font-black uppercase tracking-tight">
+                        Shipping Restricted to India
+                      </p>
+                      <p className="text-[10px] leading-relaxed text-red-50 font-medium">
+                        The pincode entered is outside our standard delivery zone. Free shipping is only available within India.
+                      </p>
+                      <a 
+                        href="https://www.instagram.com/glorious_threads_by_divya_new?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="inline-block mt-2 bg-white text-red-600 px-4 py-2 rounded-lg text-[9px] font-black uppercase hover:bg-zinc-100 transition-colors"
+                      >
+                        Message us on Instagram for Global Shipping
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="mt-6 mb-6 p-4 bg-amber-50/50 border border-amber-100 rounded-xl">
                 <p className="text-[10px] leading-relaxed text-amber-900/80 font-medium">
                   By clicking Pay Now, you agree to our <Link to="/policies/return-policy" className="underline font-bold">Return Policy</Link>. 
