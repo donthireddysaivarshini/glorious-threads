@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Star, Minus, Plus, ChevronRight, ChevronLeft, Loader2, Truck, RotateCcw, Camera, Share2 } from 'lucide-react';
+import { Star, Minus, Plus, ChevronRight, ChevronLeft, Loader2, Truck, RotateCcw, Camera, Share2, X, Zap, ShieldCheck, PackageCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { storeService } from '@/services/api';
@@ -23,6 +23,9 @@ const ProductDetail = () => {
   const [displayPrice, setDisplayPrice] = useState<number>(0);
   const [quantity, setQuantity] = useState(1);
   const [currentImage, setCurrentImage] = useState(0);
+
+  // --- ZOOM STATE ---
+  const [isZoomOpen, setIsZoomOpen] = useState(false);
 
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [reviewForm, setReviewForm] = useState({ name: '', rating: 5, comment: '', image: null as File | null });
@@ -53,11 +56,13 @@ const ProductDetail = () => {
     }
   }, [selectedSize, selectedColor]);
 
+  // --- FIXED DISPLAY IMAGES LOGIC ---
   const displayImages = useMemo(() => {
     if (!product) return [];
     if (!selectedColor) return product.images;
     const filtered = product.images.filter((img: any) => img.color === selectedColor.id || !img.color);
-    return filtered.length > 0 ? filtered : product.images;
+    // If only 1 image exists for a color, we show all images so navigation arrows remain useful
+    return filtered.length > 1 ? filtered : product.images;
   }, [product, selectedColor]);
 
   const availableSizes = useMemo(() => {
@@ -119,12 +124,14 @@ const ProductDetail = () => {
   };
 
   const handleAddToCart = (action: 'bag' | 'buy') => {
+    const pinkAlertStyle = { background: '#fdf2f8', color: '#ec4899', border: '1px solid #fbcfe8' };
+
     if (!selectedColor) {
-      toast.error("Please select a color first");
+      toast.error("Please select a color first", { style: pinkAlertStyle });
       return;
     }
     if (!selectedSize) {
-      toast.error("Please select a size first");
+      toast.error("Please select a size first", { style: pinkAlertStyle });
       return;
     }
 
@@ -132,11 +139,20 @@ const ProductDetail = () => {
       i.color === selectedColor.id || i.color_name === selectedColor.name
     )?.url || product.images[0]?.url;
 
-    addToCart(product, quantity, selectedSize, selectedColor, variantImage);
-
     if (action === 'buy') {
-      navigate('/checkout');
+      const directItem = {
+        productId: product.id,
+        product_type: 'REGULAR',
+        name: product.title,
+        price: displayPrice,
+        quantity: quantity,
+        selectedSize: selectedSize,
+        selectedColor: selectedColor,
+        image: variantImage
+      };
+      navigate('/checkout', { state: { directItem: [directItem] } });
     } else {
+      addToCart(product, quantity, selectedSize, selectedColor, variantImage);
       toast.success("Added to bag");
     }
   };
@@ -154,22 +170,22 @@ const ProductDetail = () => {
           
           <div className="grid grid-cols-1 lg:grid-cols-[450px_1fr] gap-4 lg:gap-8 items-start">
             
-            {/* LEFT SIDE: FIXED IMAGE SECTION ON DESKTOP */}
+            {/* LEFT SIDE: IMAGE SECTION */}
             <div className="lg:sticky lg:top-40 space-y-4">
-              <div className="aspect-[3/4] min-h-[500px] bg-zinc-50 relative overflow-hidden group w-full flex items-center justify-center p-8">
+              <div className="aspect-[3/4] min-h-[500px] bg-zinc-50 relative overflow-hidden group w-full flex items-center justify-center p-8 cursor-zoom-in rounded-2xl" onClick={() => setIsZoomOpen(true)}>
                 {displayImages.length > 1 && (
                   <>
                     <button 
-                      onClick={prevImage}
-                      className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 p-2 rounded-full shadow-md z-10 md:hidden"
+                      onClick={(e) => { e.stopPropagation(); prevImage(); }}
+                      className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 p-3 rounded-full shadow-lg z-10 hover:bg-white transition-all border border-zinc-100"
                     >
-                      <ChevronLeft size={20} />
+                      <ChevronLeft size={24} />
                     </button>
                     <button 
-                      onClick={nextImage}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 p-2 rounded-full shadow-md z-10 md:hidden"
+                      onClick={(e) => { e.stopPropagation(); nextImage(); }}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 p-3 rounded-full shadow-lg z-10 hover:bg-white transition-all border border-zinc-100"
                     >
-                      <ChevronRight size={20} />
+                      <ChevronRight size={24} />
                     </button>
                   </>
                 )}
@@ -181,7 +197,7 @@ const ProductDetail = () => {
                 />
                 <div className="absolute bottom-4 right-4 flex gap-2">
                   <button 
-                    onClick={handleShare}
+                    onClick={(e) => { e.stopPropagation(); handleShare(); }}
                     className="bg-white/90 p-3 rounded-full shadow-sm hover:bg-zinc-100 transition-colors"
                   >
                     <Share2 size={18} />
@@ -189,12 +205,12 @@ const ProductDetail = () => {
                 </div>
               </div>
 
-              <div className="hidden md:flex gap-2 overflow-x-auto scrollbar-hide">
+              <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2">
                 {displayImages.map((img: any, i: number) => (
                   <button 
                     key={i} 
                     onClick={() => setCurrentImage(i)} 
-                    className={`shrink-0 w-20 aspect-[3/4] border-2 transition-all ${currentImage === i ? 'border-black' : 'border-transparent'}`}
+                    className={`shrink-0 w-20 aspect-[3/4] border-2 transition-all rounded-lg overflow-hidden ${currentImage === i ? 'border-black' : 'border-transparent'}`}
                   >
                     <img src={img.url} className="w-full h-full object-cover" alt="" />
                   </button>
@@ -202,8 +218,8 @@ const ProductDetail = () => {
               </div>
             </div>
 
-            {/* RIGHT SIDE: SCROLLABLE DETAILS SECTION */}
-            <div className="flex flex-col pt-2 max-w-2xl">
+            {/* RIGHT SIDE: DETAILS SECTION */}
+            <div className="flex flex-col pt-2 max-w-2xl text-left">
               <div className="mb-6">
                 <h1 className="text-xl md:text-3xl font-bold tracking-tight text-zinc-800 mb-1">{product.title}</h1>
                 <p className="text-sm text-zinc-400 font-medium uppercase tracking-widest mb-4">{product.category_name}</p>
@@ -219,23 +235,30 @@ const ProductDetail = () => {
                 <p className="text-[10px] font-bold text-zinc-400 uppercase mt-2 tracking-widest">Inclusive of all taxes</p>
               </div>
 
+              {/* COLOR SECTION - UPDATED TO LARGER CIRCLE IMAGE PREVIEWS */}
               <div className="mb-8">
                 <span className="text-[11px] font-bold uppercase tracking-widest text-zinc-700 block mb-4">
                     Select Color {selectedColor ? `: ${selectedColor.name}` : '(Required)'}
                 </span>
-                <div className="flex gap-3">
+                <div className="flex flex-wrap gap-4">
                   {product.colors.map((c: any) => (
                     <button 
                         key={c.name} 
                         onClick={() => {setSelectedColor(c); setCurrentImage(0); setSelectedSize("");}} 
-                        className={`w-14 h-18 border-2 transition-all overflow-hidden ${selectedColor?.name === c.name ? 'border-black' : 'border-zinc-100'}`}
+                        className={`w-12 h-12 rounded-full border-2 transition-all p-0.5 flex-shrink-0 ${selectedColor?.name === c.name ? 'border-black scale-110' : 'border-zinc-200 hover:border-zinc-400'}`}
+                        title={c.name}
                     >
-                      <img src={product.images.find((i:any)=>i.color === c.id || i.color_name === c.name)?.url || product.images[0].url} className="w-full h-full object-cover" />
+                        <img 
+                          src={product.images.find((i:any)=>i.color === c.id || i.color_name === c.name)?.url || product.images[0].url} 
+                          className="w-full h-full object-cover rounded-full" 
+                          alt={c.name}
+                        />
                     </button>
                   ))}
                 </div>
               </div>
 
+              {/* SIZE SECTION */}
               <div className="mb-8">
                 <div className="flex justify-between mb-4">
                   <span className="text-[11px] font-bold uppercase tracking-widest text-zinc-700">
@@ -268,36 +291,50 @@ const ProductDetail = () => {
               <div className="relative bg-white grid grid-cols-2 gap-3 mb-10">
                 <Button 
                     onClick={() => handleAddToCart('bag')} 
-                    className="h-14 rounded-none uppercase text-[10px] font-extrabold tracking-widest bg-white border-2 border-primary text-primary hover:bg-white transition-none"
+                    className="h-14 rounded-none uppercase text-[10px] font-extrabold tracking-widest bg-white border-2 border-primary text-primary hover:bg-pink-50 transition-all"
                 >
                     Add to Bag
                 </Button>
                 <Button 
                     onClick={() => handleAddToCart('buy')} 
-                    className="h-14 rounded-none uppercase text-[10px] font-extrabold tracking-widest bg-primary text-white hover:bg-primary transition-none shadow-lg shadow-primary/20"
+                    className="h-14 rounded-none uppercase text-[10px] font-extrabold tracking-widest bg-primary text-white hover:bg-primary shadow-lg shadow-primary/20 active:scale-95 transition-all"
                 >
                     Buy Now
                 </Button>
               </div>
 
-              <div className="space-y-4 pt-8 border-t border-zinc-50 text-[11px] font-bold uppercase tracking-widest text-zinc-500">
-                <div className="flex items-center gap-3"><Truck size={18} strokeWidth={1.5} /> Free Shipping & Returns</div>
-                <div className="flex items-center gap-3"><RotateCcw size={18} strokeWidth={1.5}/> 100% Quality Guaranteed</div>
+              {/* CONNECT BADGES */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-8 border-t border-zinc-50 text-[9px] font-black uppercase tracking-widest text-zinc-500">
+                <div className="flex flex-col items-center gap-2 text-center">
+                    <Truck size={20} strokeWidth={1.5} className="text-pink-500" />
+                    <span>Free Shipping</span>
+                </div>
+                <div className="flex flex-col items-center gap-2 text-center">
+                    <Zap size={20} strokeWidth={1.5} className="text-pink-500" />
+                    <span>Fast Dispatch</span>
+                </div>
+                <div className="flex flex-col items-center gap-2 text-center">
+                    <ShieldCheck size={20} strokeWidth={1.5} className="text-pink-500" />
+                    <span>Secure Payment</span>
+                </div>
+                <div className="flex flex-col items-center gap-2 text-center">
+                    <PackageCheck size={20} strokeWidth={1.5} className="text-pink-500" />
+                    <span>Quality Assured</span>
+                </div>
               </div>
 
-              <div className="mt-12 border-t border-zinc-100 pt-8">
+              <div className="mt-8 border-t border-zinc-100 pt-8">
                 <Tabs defaultValue="details">
                   <TabsList className="bg-transparent border-none gap-10 mb-6">
                     <TabsTrigger value="details" className="bg-transparent rounded-none border-b-2 border-transparent data-[state=active]:border-black text-[11px] uppercase font-bold tracking-widest px-0">Product Details</TabsTrigger>
                     <TabsTrigger value="reviews" className="bg-transparent rounded-none border-b-2 border-transparent data-[state=active]:border-black text-[11px] uppercase font-bold tracking-widest px-0">Reviews ({reviews.length})</TabsTrigger>
                   </TabsList>
                   
-                  <TabsContent value="details" className="text-zinc-600 text-sm leading-relaxed space-y-8">
+                  <TabsContent value="details" className="text-zinc-600 text-sm leading-relaxed space-y-8 animate-in fade-in">
                     <div>
                       <h4 className="text-[10px] font-black uppercase tracking-widest text-black mb-3">Description</h4>
                       <p>{product.description}</p>
                     </div>
-
                     {product.features && (
                       <div>
                         <h4 className="text-[10px] font-black uppercase tracking-widest text-black mb-3">Key Features</h4>
@@ -310,7 +347,6 @@ const ProductDetail = () => {
                         </div>
                       </div>
                     )}
-
                     {product.care_instructions && (
                       <div className="pt-4 border-t border-zinc-50">
                         <h4 className="text-[10px] font-black uppercase tracking-widest text-black mb-3">Care Instructions</h4>
@@ -333,54 +369,6 @@ const ProductDetail = () => {
                         {showReviewForm ? "Cancel" : "Write a Review"}
                       </button>
                     </div>
-
-                    {showReviewForm && (
-                      <form onSubmit={handleReviewSubmit} className="bg-zinc-50 p-6 mb-10 space-y-6 animate-in fade-in">
-                        <div className="grid grid-cols-1 gap-6">
-                          <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Your Name</label>
-                            <input placeholder="Enter name" required className="w-full p-4 text-xs border-none bg-white outline-none" value={reviewForm.name} onChange={e => setReviewForm({...reviewForm, name: e.target.value})} />
-                          </div>
-                          <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Rating</label>
-                            <div className="flex gap-2 bg-white p-3 h-[50px] items-center">
-                              {[1, 2, 3, 4, 5].map((star) => (
-                                <Star 
-                                  key={star} 
-                                  size={20} 
-                                  className={`cursor-pointer transition-colors ${ (hoveredStar || reviewForm.rating) >= star ? 'fill-[#F4C430] text-[#F4C430]' : 'text-zinc-200' }`}
-                                  onMouseEnter={() => setHoveredStar(star)}
-                                  onMouseLeave={() => setHoveredStar(0)}
-                                  onClick={() => setReviewForm({ ...reviewForm, rating: star })}
-                                />
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Product Photo (Optional)</label>
-                          <div onClick={() => fileInputRef.current?.click()} className="w-full py-6 border-2 border-dashed border-zinc-200 bg-white flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-zinc-50 transition-colors">
-                            <Camera size={24} className="text-zinc-400" />
-                            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
-                              {reviewForm.image ? reviewForm.image.name : "Click to upload a photo"}
-                            </span>
-                            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={(e) => {
-                              const file = e.target.files ? e.target.files[0] : null;
-                              setReviewForm({ ...reviewForm, image: file }); 
-                            }} />
-                          </div>
-                        </div>
-
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Your Comment</label>
-                          <textarea placeholder="Tell us about the fit and quality..." required className="w-full p-4 text-xs border-none bg-white h-32 outline-none" value={reviewForm.comment} onChange={e => setReviewForm({...reviewForm, comment: e.target.value})} />
-                        </div>
-
-                        <Button type="submit" className="bg-black text-white text-[10px] h-14 px-10 uppercase font-bold tracking-widest">Submit Feedback</Button>
-                      </form>
-                    )}
-
                     <div className="space-y-8">
                       {reviews.map(r => (
                         <div key={r.id} className="border-b border-zinc-50 pb-6">
@@ -388,7 +376,6 @@ const ProductDetail = () => {
                             {[...Array(5)].map((_, i) => <Star key={i} size={10} className={i < r.rating ? 'fill-current' : 'text-zinc-200'} />)}
                           </div>
                           <p className="text-sm text-zinc-800 font-medium mb-4 italic">"{r.comment}"</p>
-                          {r.image && <img src={r.image} className="w-24 h-32 object-cover rounded-lg mb-4" alt="Review" />}
                           <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">— {r.user_name}</span>
                         </div>
                       ))}
@@ -401,6 +388,24 @@ const ProductDetail = () => {
           </div>
         </div>
       </main>
+
+      {/* --- ZOOM MODAL / LIGHTBOX --- */}
+      {isZoomOpen && (
+        <div className="fixed inset-0 z-[100] bg-white flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <button 
+            onClick={() => setIsZoomOpen(false)}
+            className="absolute top-8 right-8 p-3 bg-zinc-100 rounded-full hover:bg-zinc-200 transition-all text-black"
+          >
+            <X size={28} />
+          </button>
+          <img 
+            src={displayImages[currentImage]?.url} 
+            className="max-w-full max-h-[90vh] object-contain shadow-2xl" 
+            alt="Zoomed Product"
+          />
+        </div>
+      )}
+
       <Footer />
     </div>
   );

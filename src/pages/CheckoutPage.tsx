@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { ChevronDown, Loader2, MapPin, Ticket, Truck, ShieldCheck, CheckSquare, Square, CreditCard, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -33,8 +33,25 @@ const INDIAN_STATES = [
 ];
 
 const CheckoutPage = () => {
-  const { cartItems, subtotal, clearCart } = useCart();
+  // 1. We keep globalCartItems but we will conditionally ignore them
+  const { cartItems: globalCartItems, clearCart } = useCart();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // --- BUY NOW LOGIC (DATA ISOLATION) ---
+  const { checkoutItems, isDirectBuy } = useMemo(() => {
+    const direct = location.state?.directItem;
+    if (direct && Array.isArray(direct)) {
+      return { checkoutItems: direct, isDirectBuy: true };
+    }
+    return { checkoutItems: globalCartItems, isDirectBuy: false };
+  }, [location.state, globalCartItems]);
+
+  // 2. We calculate subtotal ONLY for the items being checked out
+  const checkoutSubtotal = useMemo(() => {
+    return checkoutItems.reduce((sum, item) => sum + (Number(item.price) * (item.quantity || 1)), 0);
+  }, [checkoutItems]);
+  // --------------------------------------
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [loadingInitial, setLoadingInitial] = useState(true);
@@ -53,7 +70,7 @@ const CheckoutPage = () => {
   const [address, setAddress] = useState({
     firstName: '', 
     lastName: '', 
-    country: 'India',
+    country: '',
     state: '',
     city: '', 
     street: '', 
@@ -67,7 +84,6 @@ const CheckoutPage = () => {
 
   useEffect(() => {
     const fetchLocation = async () => {
-      // Logic for exactly 6 digits
       if (address.pincode.length === 6) {
         if (!/^[1-9][0-9]{5}$/.test(address.pincode)) {
             toast.error("Invalid Pincode Format", { description: "Please enter a valid 6-digit Indian Pincode." });
@@ -89,7 +105,6 @@ const CheckoutPage = () => {
             }));
             setErrors(prev => ({ ...prev, city: false, state: false, pincode: false }));
           } else {
-            // Worst case: User entered 6 digits but they don't exist in India
             setAddress(prev => ({ ...prev, city: '', state: '' }));
             toast.error("Pincode Not Found", { description: "Shipping is only available in India. Please use a valid Indian Pincode." });
           }
@@ -125,12 +140,14 @@ const CheckoutPage = () => {
   }, []);
 
   const totals = useMemo(() => {
-    const sub = Number(subtotal) || 0;
-    const shipping = sub >= config.free_shipping_threshold || sub === 0 ? 0 : Number(config.shipping_fee);
+    const sub = Number(checkoutSubtotal) || 0;
+    if (sub === 0) return { shipping: 0, discount: 0, finalTotal: 0 };
+    
+    const shipping = sub >= config.free_shipping_threshold ? 0 : Number(config.shipping_fee);
     const discount = appliedCoupon ? Number(appliedCoupon.discount) : 0;
     const finalTotal = sub + shipping - discount;
     return { shipping, discount, finalTotal };
-  }, [subtotal, config, appliedCoupon]);
+  }, [checkoutSubtotal, config, appliedCoupon]);
 
   const isIndianPincode = useMemo(() => {
     const indiaRegex = /^[1-9][0-9]{5}$/;
@@ -191,7 +208,7 @@ const CheckoutPage = () => {
     if (!couponCode) return;
     setIsValidatingCoupon(true);
     try {
-      const res = await storeService.validateCoupon(couponCode, subtotal);
+      const res = await storeService.validateCoupon(couponCode, checkoutSubtotal);
       setAppliedCoupon(res);
       toast.success(res.message || "Coupon applied!");
     } catch (err: any) {
@@ -205,7 +222,6 @@ const CheckoutPage = () => {
   const handlePayment = async () => {
     setHasAttemptedPay(true);
 
-    // Specific Pincode check before general validation
     if (address.pincode.length !== 6 || !isIndianPincode || !address.state) {
         toast.error("Invalid Shipping Location", {
             description: "Please enter a valid 6-digit Indian Pincode. Shipping is currently only available within India."
@@ -245,14 +261,14 @@ const CheckoutPage = () => {
         phone: address.phone,
         coupon_code: appliedCoupon?.code || null,
         save_address: saveAsDefault, 
-        items: cartItems.map(item => ({
+        items: checkoutItems.map((item: any) => ({
           productId: item.productId || item.id,
           product_type: item.product_type,
           title: item.name || item.title,
           price: item.price,
           quantity: item.quantity,
-          size: item.selectedSize,
-          color: item.selectedColor?.name || ''
+          size: item.selectedSize || item.size,
+          color: item.selectedColor?.name || item.color || ''
         }))
       };
 
@@ -269,7 +285,7 @@ const CheckoutPage = () => {
           try {
             await orderService.verifyPayment(response);
             toast.success("Order Placed Successfully!");
-            clearCart();
+            if (!isDirectBuy) clearCart(); 
             navigate('/profile');
           } catch (err) {
             toast.error("Payment verification failed.");
@@ -376,7 +392,6 @@ const CheckoutPage = () => {
                   className={errorStyle('pincode')}
                   value={address.pincode} 
                   onChange={e => {
-                    // Prevent non-numeric characters and handle backspace
                     const val = e.target.value.replace(/\D/g, '');
                     setAddress({...address, pincode: val});
                     if (errors.pincode) setErrors({...errors, pincode: false});
@@ -435,6 +450,25 @@ const CheckoutPage = () => {
             <div className="bg-zinc-50 p-8 rounded-3xl border border-zinc-100 sticky top-32 shadow-sm">
               <h3 className="text-xs font-bold uppercase tracking-[0.2em] mb-8 text-zinc-400">Order Summary</h3>
               
+              {/* --- ADDED PRODUCT PREVIEW FOR UX --- */}
+              <div className="mb-8 space-y-4">
+                <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Review Items</p>
+                {checkoutItems.map((item: any, idx: number) => (
+                    <div key={idx} className="flex gap-4 p-3 bg-white rounded-2xl border border-zinc-100 shadow-sm">
+                        <div className="w-16 h-20 bg-zinc-50 rounded-lg overflow-hidden shrink-0 border border-zinc-100">
+                            <img src={item.image || item.url} className="w-full h-full object-cover" alt="" />
+                        </div>
+                        <div className="flex-1 py-1">
+                            <p className="text-[11px] font-black uppercase leading-tight line-clamp-1">{item.name || item.title}</p>
+                            <p className="text-[10px] text-zinc-400 font-bold mt-1 uppercase">
+                                {item.selectedSize || item.size} | Qty: {item.quantity}
+                            </p>
+                            <p className="text-xs font-black mt-2">₹{item.price}</p>
+                        </div>
+                    </div>
+                ))}
+              </div>
+
               <div className="mb-8 p-4 bg-white border border-zinc-200 rounded-2xl">
                 <p className="text-[9px] font-black uppercase text-zinc-400 mb-3 tracking-widest">Apply Promo Code</p>
                 <div className="flex gap-2">
@@ -454,7 +488,8 @@ const CheckoutPage = () => {
               <div className="space-y-4 mb-10 text-xs font-bold uppercase tracking-wider">
                 <div className="flex justify-between text-zinc-500">
                   <span>Subtotal</span>
-                  <span>{formatPrice(subtotal)}</span>
+                  {/* CRITICAL CHANGE: Use checkoutSubtotal instead of subtotal */}
+                  <span>{formatPrice(checkoutSubtotal)}</span>
                 </div>
                 <div className="flex justify-between text-zinc-500">
                   <span className="flex items-center gap-2 text-primary">Delivery <Truck size={12} /></span>
@@ -507,7 +542,7 @@ const CheckoutPage = () => {
 
               <Button 
                 onClick={handlePayment} 
-                disabled={isProcessing || cartItems.length === 0} 
+                disabled={isProcessing || checkoutItems.length === 0} 
                 className="w-full bg-black text-white h-16 rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] shadow-2xl active:scale-95 transition-all"
               >
                 {isProcessing ? (
