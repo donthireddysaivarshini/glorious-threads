@@ -22,6 +22,16 @@ const loadRazorpay = () => {
   });
 };
 
+const INDIAN_STATES = [
+  "Andaman and Nicobar Islands", "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", 
+  "Chandigarh", "Chhattisgarh", "Dadra and Nagar Haveli", "Daman and Diu", "Delhi", 
+  "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jammu and Kashmir", "Jharkhand", 
+  "Karnataka", "Kerala", "Ladakh", "Lakshadweep", "Madhya Pradesh", "Maharashtra", 
+  "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Puducherry", "Punjab", 
+  "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", 
+  "Uttarakhand", "West Bengal"
+];
+
 const CheckoutPage = () => {
   const { cartItems, subtotal, clearCart } = useCart();
   const navigate = useNavigate();
@@ -43,7 +53,7 @@ const CheckoutPage = () => {
   const [address, setAddress] = useState({
     firstName: '', 
     lastName: '', 
-    country: '',
+    country: 'India',
     state: '',
     city: '', 
     street: '', 
@@ -53,8 +63,43 @@ const CheckoutPage = () => {
   });
 
   const [hasAttemptedPay, setHasAttemptedPay] = useState(false);
-  // Track which specific fields have validation errors
   const [errors, setErrors] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    const fetchLocation = async () => {
+      // Logic for exactly 6 digits
+      if (address.pincode.length === 6) {
+        if (!/^[1-9][0-9]{5}$/.test(address.pincode)) {
+            toast.error("Invalid Pincode Format", { description: "Please enter a valid 6-digit Indian Pincode." });
+            return;
+        }
+
+        try {
+          const res = await fetch(`https://api.postalpincode.in/pincode/${address.pincode}`);
+          const data = await res.json();
+          
+          if (data[0].Status === "Success" && data[0].PostOffice) {
+            const postOffice = data[0].PostOffice[0];
+            const foundState = INDIAN_STATES.find(s => s.toLowerCase() === postOffice.State.toLowerCase());
+            
+            setAddress(prev => ({
+              ...prev,
+              city: postOffice.District,
+              state: foundState || postOffice.State
+            }));
+            setErrors(prev => ({ ...prev, city: false, state: false, pincode: false }));
+          } else {
+            // Worst case: User entered 6 digits but they don't exist in India
+            setAddress(prev => ({ ...prev, city: '', state: '' }));
+            toast.error("Pincode Not Found", { description: "Shipping is only available in India. Please use a valid Indian Pincode." });
+          }
+        } catch (err) {
+          console.error("Pincode lookup error:", err);
+        }
+      }
+    };
+    fetchLocation();
+  }, [address.pincode]);
 
   useEffect(() => {
     const init = async () => {
@@ -92,9 +137,8 @@ const CheckoutPage = () => {
     return indiaRegex.test(address.pincode);
   }, [address.pincode]);
 
-  const showPincodeWarning = hasAttemptedPay && !isIndianPincode && address.pincode.length > 0;
+  const showPincodeWarning = hasAttemptedPay && (!isIndianPincode || !address.state);
 
-  // Form Validation Logic
   const validateForm = () => {
     const newErrors: Record<string, boolean> = {};
     const mandatoryFields = ['firstName', 'lastName', 'country', 'state', 'city', 'street', 'pincode', 'phone'];
@@ -118,7 +162,7 @@ const CheckoutPage = () => {
     setAddress({
       firstName: addr.first_name || '',
       lastName: addr.last_name || '',
-      country: addr.country || '',
+      country: addr.country || 'India',
       state: addr.state || '',
       city: addr.city || '',
       street: addr.address || '',
@@ -128,13 +172,13 @@ const CheckoutPage = () => {
     });
     setSaveAsDefault(false); 
     setHasAttemptedPay(false);
-    setErrors({}); // Clear errors when selecting saved address
+    setErrors({});
     toast.success(`Address "${addr.label}" selected`);
   };
 
   const resetAddressForm = () => {
     setAddress({
-      firstName: '', lastName: '', country: '', state: '',
+      firstName: '', lastName: '', country: 'India', state: '',
       city: '', street: '', landmark: '', pincode: '', phone: ''
     });
     setSaveAsDefault(false);
@@ -161,21 +205,21 @@ const CheckoutPage = () => {
   const handlePayment = async () => {
     setHasAttemptedPay(true);
 
-    // Strict Validation Check
+    // Specific Pincode check before general validation
+    if (address.pincode.length !== 6 || !isIndianPincode || !address.state) {
+        toast.error("Invalid Shipping Location", {
+            description: "Please enter a valid 6-digit Indian Pincode. Shipping is currently only available within India."
+        });
+        setErrors(prev => ({ ...prev, pincode: true }));
+        return;
+    }
+
     const isValid = validateForm();
     if (!isValid) {
       toast.error("Required Fields Missing", {
         description: "Please fill in all mandatory fields highlighted in red."
       });
-      // Smart Scroll to the form
       window.scrollTo({ top: 200, behavior: 'smooth' });
-      return; // Kill the process immediately
-    }
-
-    if (!isIndianPincode) {
-      toast.error("Shipping Restricted", {
-        description: "Free shipping is only available in India. Please use an Indian Pincode or contact us."
-      });
       return;
     }
 
@@ -248,7 +292,6 @@ const CheckoutPage = () => {
     }
   };
 
-  // Helper for conditional error styling
   const errorStyle = (field: string) => 
     errors[field] ? "border-red-500 bg-red-50 focus-visible:ring-red-500" : "";
 
@@ -311,34 +354,50 @@ const CheckoutPage = () => {
                     if (errors.lastName) setErrors({...errors, lastName: false});
                   }} 
                 />
-                
+                <Input 
+                  className={`col-span-2 ${errorStyle('phone')}`} 
+                  placeholder="Contact Number *" 
+                  value={address.phone} 
+                  onChange={e => {
+                    setAddress({...address, phone: e.target.value});
+                    if (errors.phone) setErrors({...errors, phone: false});
+                  }} 
+                  maxLength={10} 
+                />
                 <Input 
                   className={`col-span-2 ${errorStyle('country')}`} 
                   placeholder="Country / Region *" 
                   value={address.country} 
-                  onChange={e => {
-                    setAddress({...address, country: e.target.value});
-                    if (errors.country) setErrors({...errors, country: false});
-                  }} 
+                  readOnly
                 />
+                
+                <Input 
+                  placeholder="Pincode *" 
+                  className={errorStyle('pincode')}
+                  value={address.pincode} 
+                  onChange={e => {
+                    // Prevent non-numeric characters and handle backspace
+                    const val = e.target.value.replace(/\D/g, '');
+                    setAddress({...address, pincode: val});
+                    if (errors.pincode) setErrors({...errors, pincode: false});
+                    if (hasAttemptedPay) setHasAttemptedPay(false); 
+                  }} 
+                  maxLength={6} 
+                />
+
                 <Input 
                   placeholder="State *" 
                   className={errorStyle('state')}
                   value={address.state} 
-                  onChange={e => {
-                    setAddress({...address, state: e.target.value});
-                    if (errors.state) setErrors({...errors, state: false});
-                  }} 
+                  readOnly 
                 />
                 <Input 
                   placeholder="City *" 
-                  className={errorStyle('city')}
+                  className={`col-span-2 ${errorStyle('city')}`}
                   value={address.city} 
-                  onChange={e => {
-                    setAddress({...address, city: e.target.value});
-                    if (errors.city) setErrors({...errors, city: false});
-                  }} 
+                  readOnly 
                 />
+                
                 <Input 
                   className={`col-span-2 ${errorStyle('street')}`} 
                   placeholder="Street Address / House No. *" 
@@ -353,28 +412,6 @@ const CheckoutPage = () => {
                   placeholder="Landmark (Optional)" 
                   value={address.landmark} 
                   onChange={e => setAddress({...address, landmark: e.target.value})} 
-                />
-                
-                <Input 
-                  placeholder="Pincode *" 
-                  className={errorStyle('pincode')}
-                  value={address.pincode} 
-                  onChange={e => {
-                    setAddress({...address, pincode: e.target.value});
-                    if (errors.pincode) setErrors({...errors, pincode: false});
-                    if (hasAttemptedPay) setHasAttemptedPay(false); 
-                  }} 
-                  maxLength={6} 
-                />
-                <Input 
-                  className={`col-span-2 ${errorStyle('phone')}`} 
-                  placeholder="Contact Number *" 
-                  value={address.phone} 
-                  onChange={e => {
-                    setAddress({...address, phone: e.target.value});
-                    if (errors.phone) setErrors({...errors, phone: false});
-                  }} 
-                  maxLength={10} 
                 />
               </div>
               

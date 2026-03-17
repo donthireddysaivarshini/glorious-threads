@@ -18,13 +18,12 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // 🔥 THE FIX: Only clear token and redirect if the error is 401 
-    // AND we are not currently trying to log in.
     if (error.response?.status === 401) {
       const isLoginRequest = error.config.url.includes('/auth/login') || error.config.url.includes('/auth/google');
+      // NEW: Don't redirect for public store data
+      const isPublicRequest = error.config.url.includes('/store/') || error.config.url.includes('/content/');
       
-      if (!isLoginRequest) {
-        console.warn("Unauthorized access - clearing session");
+      if (!isLoginRequest && !isPublicRequest) {
         localStorage.removeItem('userToken');
         if (window.location.pathname !== '/login') {
           window.location.href = '/login';

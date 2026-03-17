@@ -8,7 +8,7 @@ import founder2 from '@/assets/founder2.jpeg';
 import founder3 from '@/assets/founder3.jpeg';
 
 const defaultImages = [founder1, founder2, founder3];
-
+const BASE_URL = import.meta.env.VITE_API_URL.replace('/api', '');
 const BrandStory = () => {
   const [current, setCurrent] = useState(0);
   const [sliderImages, setSliderImages] = useState(defaultImages);
@@ -29,8 +29,12 @@ const BrandStory = () => {
         if (story) {
           // 1. Update Images
           if (story.images && story.images.length > 0) {
-            setSliderImages(story.images.map((imgObj: any) => imgObj.image));
-          }
+    const fetchedImages = story.images.map((imgObj: any) => {
+        const imgPath = imgObj.image;
+        return imgPath.startsWith('http') ? imgPath : `${BASE_URL}${imgPath}`;
+    });
+    setSliderImages(fetchedImages);
+}
 
           // 2. Split the dynamic heading
           // If the admin types "Line 1 | Line 2", it splits them.

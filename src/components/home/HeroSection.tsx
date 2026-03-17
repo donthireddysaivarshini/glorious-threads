@@ -10,27 +10,32 @@ const HeroSection = () => {
     image: heroimage1,
     link: "/category/all"
   });
+const BASE_URL = import.meta.env.VITE_API_URL.replace('/api', '');
 
   useEffect(() => {
     const fetchHeroData = async () => {
       try {
         const data = await storeService.getWebContent();
-        if (data.hero_slides && data.hero_slides.length > 0) {
-          // Use the first active slide
+        console.log("Hero Data Received:", data); // Check this in your browser console
+        
+        // Use the key returned by your Content View (usually 'hero_slides')
+        if (data && data.hero_slides && data.hero_slides.length > 0) {
           const topSlide = data.hero_slides[0];
-          setHeroData({
-            image: topSlide.image,
-            link: topSlide.link_url || "/category/all"
-          });
+          const imageUrl = topSlide.image.startsWith('http') 
+        ? topSlide.image 
+        : `${BASE_URL}${topSlide.image}`;
+
+    setHeroData({
+        image: imageUrl,
+        link: topSlide.link_url || "/category/all"
+    });
         }
       } catch (error) {
         console.error("Failed to load dynamic hero content", error);
       }
     };
-
     fetchHeroData();
   }, []);
-
   return (
     <section className="relative w-full bg-white pt-28 md:pt-32">
       <div className="container-luxury mx-auto px-4">

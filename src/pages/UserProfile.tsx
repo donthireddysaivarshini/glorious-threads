@@ -46,6 +46,7 @@ interface Order {
   country?: string;
   zip_code?: string;
   tracking_link?: string;
+  tracking_note?: string;
 }
 
 interface SavedAddress {
@@ -185,6 +186,19 @@ const UserProfile = () => {
       default: return { icon: <Package className="w-4 h-4" />, color: 'text-gray-600 bg-gray-50 border-gray-100' };
     }
   };
+  // UserProfile.tsx
+
+const formatToIST = (dateString: string) => {
+  return new Date(dateString).toLocaleString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  });
+};
 
   return (
     <div className="flex flex-col min-h-screen bg-white"> 
@@ -244,21 +258,36 @@ const UserProfile = () => {
                         <div key={order.id} className="border border-pink-50 rounded-2xl overflow-hidden hover:shadow-md transition-all">
                           <div className="bg-gray-50/50 p-5 flex flex-wrap justify-between items-center gap-4">
                             <div className="flex gap-6 text-left">
-                              <div><p className="text-[9px] font-bold text-gray-400 uppercase">Order ID</p><p className="text-xs font-bold">#{order.id}</p></div>
+                              {/* Inside the map loop for orders */}
+<div>
+  <p className="text-[9px] font-bold text-gray-400 uppercase">Order ID & Date</p>
+  <p className="text-xs font-bold">#{order.id}</p>
+  <p className="text-[10px] text-zinc-500">{formatToIST(order.created_at)}</p>
+</div>
                               <div><p className="text-[9px] font-bold text-gray-400 uppercase">Total</p><p className="text-xs font-bold">₹{order.total_amount}</p></div>
                               <div><p className="text-[9px] font-bold text-gray-400 uppercase">Payment</p><p className={`text-[10px] font-black uppercase ${order.payment_status === 'Paid' ? 'text-green-600' : 'text-red-500'}`}>{order.payment_status}</p></div>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <div className={`flex items-center gap-2 px-3 py-1 rounded-full border ${getStatusConfig(order.order_status).color}`}>
-                                    {getStatusConfig(order.order_status).icon}
-                                    <span className="text-[10px] font-bold uppercase">{order.order_status}</span>
-                                </div>
-                                {order.tracking_link && order.order_status !== 'Cancelled' && (
-                                    <a href={order.tracking_link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 px-3 py-1 rounded-full bg-blue-600 text-white text-[10px] font-bold uppercase hover:bg-blue-700">
-                                        <Truck size={12} /> Track
-                                    </a>
-                                )}
-                            </div>
+                            <div className="flex flex-col items-start gap-2">
+    <div className="flex items-center gap-2">
+        <div className={`flex items-center gap-2 px-3 py-1 rounded-full border ${getStatusConfig(order.order_status).color}`}>
+            {getStatusConfig(order.order_status).icon}
+            <span className="text-[10px] font-bold uppercase">{order.order_status}</span>
+        </div>
+        {order.tracking_link && order.order_status !== 'Cancelled' && (
+            <a href={order.tracking_link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 px-3 py-1 rounded-full bg-blue-600 text-white text-[10px] font-bold uppercase hover:bg-blue-700">
+                <Truck size={12} /> Track
+            </a>
+        )}
+    </div>
+    
+    {/* NEW: TRACKING NOTE DISPLAY */}
+    {order.tracking_note && order.order_status !== 'Cancelled' && (
+        <div className="mt-1 bg-zinc-100 p-2 rounded-lg border border-zinc-200 max-w-[200px] text-left">
+            <p className="text-[9px] font-bold text-zinc-400 uppercase leading-tight">Tracking Note</p>
+            <p className="text-[10px] font-medium text-zinc-700 break-words">{order.tracking_note}</p>
+        </div>
+    )}
+</div>
                           </div>
 
                           <div className="p-5 space-y-4 text-left">
