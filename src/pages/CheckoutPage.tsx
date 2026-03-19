@@ -70,7 +70,7 @@ const CheckoutPage = () => {
   const [address, setAddress] = useState({
     firstName: '', 
     lastName: '', 
-    country: '',
+    country: 'India',
     state: '',
     city: '', 
     street: '', 

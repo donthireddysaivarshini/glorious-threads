@@ -23,7 +23,7 @@ const ProductDetail = () => {
   const [displayPrice, setDisplayPrice] = useState<number>(0);
   const [quantity, setQuantity] = useState(1);
   const [currentImage, setCurrentImage] = useState(0);
-
+  const [displayOriginalPrice, setDisplayOriginalPrice] = useState<number>(0);
   // --- ZOOM STATE ---
   const [isZoomOpen, setIsZoomOpen] = useState(false);
 
@@ -33,26 +33,32 @@ const ProductDetail = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        setLoading(true);
-        const [data, reviewsData] = await Promise.all([
-          storeService.getProductBySlug(slug!),
-          storeService.getReviews(slug!)
-        ]);
-        setProduct(data);
-        setReviews(reviewsData.results || reviewsData);
-        setDisplayPrice(Number(data.price));
-      } catch (err) { console.error(err); }
-      finally { setLoading(false); }
-    };
-    loadData();
-  }, [slug]);
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const [data, reviewsData] = await Promise.all([
+        storeService.getProductBySlug(slug!),
+        storeService.getReviews(slug!)
+      ]);
+      setProduct(data);
+      setReviews(reviewsData.results || reviewsData);
+      setDisplayPrice(Number(data.price));
+      // 🔥 ADD THIS LINE HERE
+      setDisplayOriginalPrice(Number(data.original_price)); 
+    } catch (err) { console.error(err); }
+    finally { setLoading(false); }
+  };
+  loadData();
+}, [slug]);
 
   useEffect(() => {
     if (selectedSize && selectedColor) {
       const sizeObj = selectedColor.sizes.find((s: any) => s.size === selectedSize);
-      if (sizeObj) setDisplayPrice(Number(sizeObj.price));
+      if (sizeObj) {
+        setDisplayPrice(Number(sizeObj.price));
+        // 🔥 Update the original price too
+        setDisplayOriginalPrice(Number(sizeObj.original_price));
+      }
     }
   }, [selectedSize, selectedColor]);
 
@@ -152,12 +158,12 @@ const ProductDetail = () => {
       };
       navigate('/checkout', { state: { directItem: [directItem] } });
     } else {
-      addToCart(product, quantity, selectedSize, selectedColor, variantImage);
+      addToCart(product, quantity, selectedSize, selectedColor, variantImage, displayPrice);
       toast.success("Added to bag");
     }
   };
 
-  const savings = product?.original_price ? Math.floor(product.original_price - displayPrice) : 0;
+  const savings = displayOriginalPrice ? Math.floor(displayOriginalPrice - displayPrice) : 0;
 
   if (loading) return <div className="h-screen flex justify-center items-center"><Loader2 className="animate-spin text-pink-500" /></div>;
   if (!product) return null;
@@ -225,11 +231,13 @@ const ProductDetail = () => {
                 <p className="text-sm text-zinc-400 font-medium uppercase tracking-widest mb-4">{product.category_name}</p>
                 <div className="flex items-center gap-3 py-4 border-y border-zinc-100">
                   <span className="text-2xl font-extrabold text-black">₹{displayPrice}</span>
-                  {product.original_price && (
+                  {displayOriginalPrice > 0 && (
                     <>
-                      <span className="text-lg text-zinc-300 line-through">₹{product.original_price}</span>
-                      <span className="text-pink-500 font-extrabold text-sm uppercase">₹{savings} OFF</span>
-                    </>
+                      <span className="text-lg text-zinc-300 line-through">₹{displayOriginalPrice}</span>
+      <span className="text-pink-500 font-extrabold text-sm uppercase">
+        ₹{Math.floor(displayOriginalPrice - displayPrice)} OFF
+      </span>
+    </>
                   )}
                 </div>
                 <p className="text-[10px] font-bold text-zinc-400 uppercase mt-2 tracking-widest">Inclusive of all taxes</p>
@@ -363,24 +371,136 @@ const ProductDetail = () => {
                   </TabsContent>
 
                   <TabsContent value="reviews">
-                    <div className="flex justify-between items-center mb-6">
-                      <h3 className="text-sm font-bold uppercase tracking-widest">User Experiences</h3>
-                      <button onClick={() => setShowReviewForm(!showReviewForm)} className="text-[10px] font-black underline uppercase">
-                        {showReviewForm ? "Cancel" : "Write a Review"}
-                      </button>
-                    </div>
-                    <div className="space-y-8">
-                      {reviews.map(r => (
-                        <div key={r.id} className="border-b border-zinc-50 pb-6">
-                          <div className="flex text-[#F4C430] mb-3">
-                            {[...Array(5)].map((_, i) => <Star key={i} size={10} className={i < r.rating ? 'fill-current' : 'text-zinc-200'} />)}
-                          </div>
-                          <p className="text-sm text-zinc-800 font-medium mb-4 italic">"{r.comment}"</p>
-                          <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">— {r.user_name}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </TabsContent>
+  <div className="flex justify-between items-center mb-6">
+    <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-800">Customer Reviews</h3>
+    <button 
+      onClick={() => setShowReviewForm(!showReviewForm)} 
+      className={`text-[10px] font-black uppercase transition-all tracking-widest ${showReviewForm ? 'text-red-500' : 'underline text-primary'}`}
+    >
+      {showReviewForm ? "Close" : "Write a Review"}
+    </button>
+  </div>
+
+  {/* --- REVIEW FORM --- */}
+  {showReviewForm && (
+    <div className="mb-12 p-6 bg-zinc-50 rounded-2xl border border-zinc-100 animate-in fade-in slide-in-from-top-4 duration-300">
+      <form onSubmit={handleReviewSubmit} className="space-y-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Your Name</label>
+            <input 
+              type="text" 
+              value={reviewForm.name}
+              onChange={(e) => setReviewForm({...reviewForm, name: e.target.value})}
+              className="w-full p-3 bg-white border border-zinc-200 rounded-xl text-sm focus:outline-none focus:border-primary transition-colors"
+              placeholder="e.g. Anjali Sharma"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 block">Rating</label>
+            <div className="flex gap-1 py-2">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <Star 
+                  key={star}
+                  size={22}
+                  className={`cursor-pointer transition-all ${
+                    (hoveredStar || reviewForm.rating) >= star ? 'fill-[#F4C430] text-[#F4C430] scale-110' : 'text-zinc-300'
+                  }`}
+                  onMouseEnter={() => setHoveredStar(star)}
+                  onMouseLeave={() => setHoveredStar(0)}
+                  onClick={() => setReviewForm({...reviewForm, rating: star})}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Your Experience</label>
+          <textarea 
+            rows={4}
+            value={reviewForm.comment}
+            onChange={(e) => setReviewForm({...reviewForm, comment: e.target.value})}
+            className="w-full p-4 bg-white border border-zinc-200 rounded-xl text-sm focus:outline-none focus:border-primary transition-colors"
+            placeholder="How is the fabric quality? Did it match the pictures?"
+          />
+        </div>
+
+        {/* IMAGE UPLOAD SECTION */}
+        <div className="space-y-2">
+          <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 block">Add Photo (Optional)</label>
+          <div className="flex items-center gap-4">
+            <button 
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="flex items-center gap-2 px-4 py-2 border-2 border-dashed border-zinc-200 rounded-xl hover:border-primary transition-colors text-zinc-400 hover:text-primary"
+            >
+              <Camera size={18} />
+              <span className="text-[10px] font-bold uppercase">Upload Image</span>
+            </button>
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              className="hidden" 
+              accept="image/*"
+              onChange={(e) => setReviewForm({...reviewForm, image: e.target.files?.[0] || null})}
+            />
+            {reviewForm.image && (
+              <div className="flex items-center gap-2 bg-pink-50 px-3 py-1 rounded-full border border-pink-100">
+                <span className="text-[9px] font-bold text-primary truncate max-w-[100px]">{reviewForm.image.name}</span>
+                <button type="button" onClick={() => setReviewForm({...reviewForm, image: null})}><X size={12} className="text-primary"/></button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <Button type="submit" className="w-full bg-black text-white py-7 uppercase text-[10px] font-black tracking-[0.2em] rounded-xl hover:bg-zinc-800 transition-all">
+          Submit Review
+        </Button>
+      </form>
+    </div>
+  )}
+
+  {/* --- REVIEWS LIST --- */}
+  <div className="space-y-10">
+    {reviews.length > 0 ? (
+      reviews.map(r => (
+        <div key={r.id} className="border-b border-zinc-50 pb-8 last:border-0">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex text-[#F4C430] gap-0.5">
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} size={12} className={i < r.rating ? 'fill-current' : 'text-zinc-200'} />
+              ))}
+            </div>
+            <span className="text-[9px] font-bold text-zinc-300 uppercase tracking-tighter">{r.date}</span>
+          </div>
+          
+          <p className="text-sm text-zinc-700 leading-relaxed mb-4 font-medium italic">"{r.comment}"</p>
+          
+          {r.image && (
+             <div className="mb-4">
+                <img src={r.image} className="w-20 h-24 object-cover rounded-lg border border-zinc-100" alt="Review" />
+             </div>
+          )}
+
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 bg-zinc-100 rounded-full flex items-center justify-center text-[8px] font-bold text-zinc-400">
+              {r.user_name.charAt(0)}
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
+              {r.user_name} <span className="mx-2 font-normal text-zinc-200">|</span> <span className="font-bold text-zinc-300">{r.location || "Verified Buyer"}</span>
+            </span>
+          </div>
+        </div>
+      ))
+    ) : (
+      <div className="text-center py-20 bg-zinc-50/50 rounded-3xl border border-dashed border-zinc-100">
+        <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">No reviews for this masterpiece yet.</p>
+        <button onClick={() => setShowReviewForm(true)} className="mt-2 text-[10px] font-black text-primary underline uppercase tracking-widest">Be the first to review</button>
+      </div>
+    )}
+  </div>
+</TabsContent>
                 </Tabs>
               </div>
             </div>

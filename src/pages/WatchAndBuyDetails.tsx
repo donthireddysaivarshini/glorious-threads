@@ -113,6 +113,16 @@ const WatchAndBuyDetails = () => {
 
   const handleReviewSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Check if user is logged in if your backend requires it
+    const token = localStorage.getItem('userToken');
+    if (!token) {
+      toast.error("Please login to post a review", {
+        action: { label: 'Login', onClick: () => navigate('/login') }
+      });
+      return;
+    }
+
     if (!reviewForm.name || !reviewForm.comment) {
       toast.error("Please fill in all fields");
       return;
@@ -125,19 +135,22 @@ const WatchAndBuyDetails = () => {
     if (reviewForm.image) formData.append('image', reviewForm.image);
 
     try {
+      // Ensure this matches the /api/watch-and-buy/${slug}/review/ pattern
       await storeService.addWatchBuyReview(product.slug, formData);
-      toast.success("Review submitted!");
+      toast.success("Review submitted successfully!");
+      
       setShowReviewForm(false);
       setReviewForm({ name: '', rating: 5, comment: '', image: null });
 
+      // Refresh data
       const updatedData = await storeService.getWatchBuyDetail(slug!);
       setProduct(updatedData);
       setReviews(updatedData.reviews || []);
-    } catch (err) {
-      toast.error("Failed to post review");
+    } catch (err: any) {
+      console.error("Review Error:", err);
+      toast.error(err.response?.data?.detail || "Failed to post review. Ensure you are logged in.");
     }
   };
-
   if (loading) return <div className="h-screen flex justify-center items-center"><Loader2 className="animate-spin text-pink-500" /></div>;
   if (!product) return null;
 

@@ -16,7 +16,15 @@ interface CartItem {
 
 interface CartContextType {
   cartItems: CartItem[];
-  addToCart: (product: any, quantity: number, size: string, color: { name: string; hex: string },variantImage?: string) => void;
+  // 🔥 Update this line to include variantPrice
+  addToCart: (
+    product: any, 
+    quantity: number, 
+    size: string, 
+    color: { name: string; hex: string }, 
+    variantImage?: string, 
+    variantPrice?: number // <--- Add this!
+  ) => void;
   removeFromCart: (id: string) => void;
   updateQuantity: (id: string, delta: number) => void;
   clearCart: () => void;
@@ -41,8 +49,9 @@ const addToCart = (
   product: any, 
   quantity: number, 
   size: string, 
-  color: { name: string; hex: string; id?: any }, // added id just in case
-  variantImage?: string // <--- Add this parameter
+  color: { name: string; hex: string; id?: any },
+  variantImage?: string,
+  variantPrice?: number // <--- Make sure this has the '?' so it's optional
 ) => {
   setCartItems((prev) => {
     const variantId = `${product.id}-${color.name}-${size}`;
@@ -60,8 +69,8 @@ const addToCart = (
       id: variantId,
       productId: product.id,
       name: product.name || product.title,
-      price: Number(product.price),
-      // Use overrideImage if provided, else fallback to default logic
+      // Use the variantPrice if we have it, otherwise fallback to the product base price
+      price: variantPrice !== undefined ? Number(variantPrice) : Number(product.price),
       image: variantImage || product.thumbnail || (product.images?.[0]?.url || product.images?.[0] || ''),
       quantity,
       selectedSize: size,
