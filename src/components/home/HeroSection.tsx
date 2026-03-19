@@ -14,28 +14,25 @@ const HeroSection = () => {
     const fetchHeroData = async () => {
       try {
         const data = await storeService.getWebContent();
+        console.log("Full Web Content Response:", data);
         
         if (data && data.hero_slides && data.hero_slides.length > 0) {
           const topSlide = data.hero_slides[0];
           let finalImageUrl = topSlide.image;
 
-          // Check if the URL is relative (starts with /media/ or media/)
           if (finalImageUrl && !finalImageUrl.startsWith('http')) {
-            // 1. Get the base domain (e.g., https://api.yourdomain.com)
-            // This safely removes /api and any trailing slashes
-            const backendBase = import.meta.env.VITE_API_URL.split('/api')[0].replace(/\/$/, "");
+            // SAFE EXTRACTION: Try env variable first, then fallback to current window origin
+            const apiBase = import.meta.env.VITE_API_URL || window.location.origin;
+            const backendBase = apiBase.split('/api')[0].replace(/\/$/, "");
             
-            // 2. Clean the path (ensure it starts with exactly one /)
             const cleanPath = finalImageUrl.startsWith('/') ? finalImageUrl : `/${finalImageUrl}`;
-            
-            // 3. Combine: Result is https://api.yourdomain.com/media/hero.jpg
             finalImageUrl = `${backendBase}${cleanPath}`;
           }
 
-          console.log("🚀 Production Hero Image URL:", finalImageUrl);
+          console.log("🚀 Attempting to load Hero Image:", finalImageUrl);
 
           setHeroData({
-            image: finalImageUrl || heroimage1,
+            image: finalImageUrl, // Don't use || here, let the onError handle the fallback
             link: topSlide.link_url || "/category/all"
           });
         }
