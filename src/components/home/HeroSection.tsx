@@ -11,38 +11,49 @@ const HeroSection = () => {
   });
 
   useEffect(() => {
-    const fetchHeroData = async () => {
-      try {
-        const data = await storeService.getWebContent();
-        console.log("Full Web Content Response:", data);
-        
-        if (data && data.hero_slides && data.hero_slides.length > 0) {
-          const topSlide = data.hero_slides[0];
-          let finalImageUrl = topSlide.image;
+  const fetchHeroData = async () => {
+    try {
+      const data = await storeService.getWebContent();
+      
+      if (data && data.hero_slides && data.hero_slides.length > 0) {
+        const topSlide = data.hero_slides[0];
+        let rawPath = topSlide.image;
 
-          if (finalImageUrl && !finalImageUrl.startsWith('http')) {
-            // SAFE EXTRACTION: Try env variable first, then fallback to current window origin
-            const apiBase = import.meta.env.VITE_API_URL || window.location.origin;
-            const backendBase = apiBase.split('/api')[0].replace(/\/$/, "");
-            
-            const cleanPath = finalImageUrl.startsWith('/') ? finalImageUrl : `/${finalImageUrl}`;
-            finalImageUrl = `${backendBase}${cleanPath}`;
-          }
-
-          console.log("🚀 Attempting to load Hero Image:", finalImageUrl);
-
+        if (rawPath && !rawPath.startsWith('http')) {
+          // 1. Get the base domain safely
+          // If VITE_API_URL is missing, we use window.location.origin as a backup
+          const apiBase = import.meta.env.VITE_API_URL || window.location.origin;
+          
+          // 2. Extract the domain (e.g., https://api.yourdomain.com)
+          const domain = apiBase.split('/api')[0].replace(/\/$/, "");
+          
+          // 3. Clean the path (remove leading slash to avoid double slashes)
+          const cleanPath = rawPath.startsWith('/') ? rawPath.substring(1) : rawPath;
+          
+          // 4. Combine them with a forced double-slash protocol fix
+          // This ensures we get https:// even if the split messed up
+          const finalUrl = `${domain}/${cleanPath}`;
+          
           setHeroData({
-            image: finalImageUrl, // Don't use || here, let the onError handle the fallback
+            image: finalUrl,
+            link: topSlide.link_url || "/category/all"
+          });
+          
+          console.log("✅ Fixed Hero URL:", finalUrl);
+        } else {
+          // It's already a full URL
+          setHeroData({
+            image: rawPath,
             link: topSlide.link_url || "/category/all"
           });
         }
-      } catch (error) {
-        console.error("Hero Load Error:", error);
       }
-    };
-    fetchHeroData();
-  }, []);
-
+    } catch (error) {
+      console.error("Hero Load Error:", error);
+    }
+  };
+  fetchHeroData();
+}, []);
   return (
     <section className="relative w-full bg-white pt-28 md:pt-32">
       <div className="container-luxury mx-auto px-4">
