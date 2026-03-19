@@ -20,28 +20,22 @@ const HeroSection = () => {
         let rawPath = topSlide.image;
 
         if (rawPath && !rawPath.startsWith('http')) {
-          // 1. Get the base domain safely
-          // If VITE_API_URL is missing, we use window.location.origin as a backup
+          // 1. Get the base domain (e.g., https://api.yourdomain.com)
           const apiBase = import.meta.env.VITE_API_URL || window.location.origin;
+          const domain = apiBase.split('/api')[0];
           
-          // 2. Extract the domain (e.g., https://api.yourdomain.com)
-          const domain = apiBase.split('/api')[0].replace(/\/$/, "");
+          // 2. Use the URL constructor to join them. 
+          // This automatically handles the https:// and any missing or extra slashes.
+          const cleanPath = rawPath.startsWith('/') ? rawPath : `/${rawPath}`;
+          const finalUrl = new URL(cleanPath, domain).href;
           
-          // 3. Clean the path (remove leading slash to avoid double slashes)
-          const cleanPath = rawPath.startsWith('/') ? rawPath.substring(1) : rawPath;
-          
-          // 4. Combine them with a forced double-slash protocol fix
-          // This ensures we get https:// even if the split messed up
-          const finalUrl = `${domain}/${cleanPath}`;
-          
+          console.log("🚀 FINAL ATTEMPT URL:", finalUrl);
+
           setHeroData({
             image: finalUrl,
             link: topSlide.link_url || "/category/all"
           });
-          
-          console.log("✅ Fixed Hero URL:", finalUrl);
         } else {
-          // It's already a full URL
           setHeroData({
             image: rawPath,
             link: topSlide.link_url || "/category/all"
@@ -54,6 +48,7 @@ const HeroSection = () => {
   };
   fetchHeroData();
 }, []);
+
   return (
     <section className="relative w-full bg-white pt-28 md:pt-32">
       <div className="container-luxury mx-auto px-4">
