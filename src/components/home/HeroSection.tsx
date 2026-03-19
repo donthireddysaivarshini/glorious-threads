@@ -5,37 +5,47 @@ import heroimage1 from '@/assets/heroimage1.png';
 import { storeService } from '@/services/api';
 
 const HeroSection = () => {
-  // Store the full slide object to access both image and link
   const [heroData, setHeroData] = useState({
     image: heroimage1,
     link: "/category/all"
   });
-const BASE_URL = import.meta.env.VITE_API_URL.replace('/api', '');
 
   useEffect(() => {
     const fetchHeroData = async () => {
       try {
         const data = await storeService.getWebContent();
-        console.log("Hero Data Received:", data); // Check this in your browser console
         
-        // Use the key returned by your Content View (usually 'hero_slides')
         if (data && data.hero_slides && data.hero_slides.length > 0) {
           const topSlide = data.hero_slides[0];
-          const imageUrl = topSlide.image.startsWith('http') 
-        ? topSlide.image 
-        : `${BASE_URL}${topSlide.image}`;
+          let finalImageUrl = topSlide.image;
 
-    setHeroData({
-        image: imageUrl,
-        link: topSlide.link_url || "/category/all"
-    });
+          // Check if the URL is relative (starts with /media/ or media/)
+          if (finalImageUrl && !finalImageUrl.startsWith('http')) {
+            // 1. Get the base domain (e.g., https://api.yourdomain.com)
+            // This safely removes /api and any trailing slashes
+            const backendBase = import.meta.env.VITE_API_URL.split('/api')[0].replace(/\/$/, "");
+            
+            // 2. Clean the path (ensure it starts with exactly one /)
+            const cleanPath = finalImageUrl.startsWith('/') ? finalImageUrl : `/${finalImageUrl}`;
+            
+            // 3. Combine: Result is https://api.yourdomain.com/media/hero.jpg
+            finalImageUrl = `${backendBase}${cleanPath}`;
+          }
+
+          console.log("🚀 Production Hero Image URL:", finalImageUrl);
+
+          setHeroData({
+            image: finalImageUrl || heroimage1,
+            link: topSlide.link_url || "/category/all"
+          });
         }
       } catch (error) {
-        console.error("Failed to load dynamic hero content", error);
+        console.error("Hero Load Error:", error);
       }
     };
     fetchHeroData();
   }, []);
+
   return (
     <section className="relative w-full bg-white pt-28 md:pt-32">
       <div className="container-luxury mx-auto px-4">
@@ -43,17 +53,20 @@ const BASE_URL = import.meta.env.VITE_API_URL.replace('/api', '');
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="relative w-full aspect-[3/2] md:aspect-[21/8] rounded-2xl overflow-hidden shadow-2xl"
+          className="relative w-full aspect-[3/2] md:aspect-[21/8] rounded-2xl overflow-hidden shadow-2xl bg-zinc-50"
         >
-          {/* Wrap the image in a Link so the whole banner is clickable */}
           <Link to={heroData.link} className="block w-full h-full group">
             <img 
+              key={heroData.image} // Re-mounts img tag when URL changes
               src={heroData.image} 
-              className="w-full h-full object-cover object-[center_30%] transition-transform duration-700 group-hover:scale-105" 
-              alt="Promotion Banner" 
+              className="w-full h-full object-cover object-center transition-opacity duration-500" 
+              alt="Promotion Banner"
+              onLoad={(e) => (e.currentTarget.style.opacity = "1")}
+              onError={(e) => {
+                console.error("Image failed to load:", heroData.image);
+                e.currentTarget.src = heroimage1; // Show local fallback
+              }}
             />
-            
-            {/* Subtle overlay effect on hover to indicate clickability */}
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300" />
           </Link>
         </motion.div>
