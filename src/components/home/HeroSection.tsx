@@ -17,30 +17,14 @@ const HeroSection = () => {
       
       if (data && data.hero_slides && data.hero_slides.length > 0) {
         const topSlide = data.hero_slides[0];
-        let rawPath = topSlide.image;
+        
+        // Since we fixed the backend, topSlide.image will now be a FULL URL
+        console.log("🚀 Incoming Hero URL from Backend:", topSlide.image);
 
-        if (rawPath && !rawPath.startsWith('http')) {
-          // 1. Get the base domain (e.g., https://api.yourdomain.com)
-          const apiBase = import.meta.env.VITE_API_URL || window.location.origin;
-          const domain = apiBase.split('/api')[0];
-          
-          // 2. Use the URL constructor to join them. 
-          // This automatically handles the https:// and any missing or extra slashes.
-          const cleanPath = rawPath.startsWith('/') ? rawPath : `/${rawPath}`;
-          const finalUrl = new URL(cleanPath, domain).href;
-          
-          console.log("🚀 FINAL ATTEMPT URL:", finalUrl);
-
-          setHeroData({
-            image: finalUrl,
-            link: topSlide.link_url || "/category/all"
-          });
-        } else {
-          setHeroData({
-            image: rawPath,
-            link: topSlide.link_url || "/category/all"
-          });
-        }
+        setHeroData({
+          image: topSlide.image, 
+          link: topSlide.link_url || "/category/all"
+        });
       }
     } catch (error) {
       console.error("Hero Load Error:", error);
@@ -48,7 +32,6 @@ const HeroSection = () => {
   };
   fetchHeroData();
 }, []);
-
   return (
     <section className="relative w-full bg-white pt-28 md:pt-32">
       <div className="container-luxury mx-auto px-4">
