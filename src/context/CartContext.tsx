@@ -8,6 +8,7 @@ interface CartItem {
   price: number;
   image: string;
   quantity: number;
+  stock: number; // 🔥 Required
   selectedSize: string;
   selectedColor: { name: string; hex: string };
   slug: string; 
@@ -16,14 +17,14 @@ interface CartItem {
 
 interface CartContextType {
   cartItems: CartItem[];
-  // 🔥 Update this line to include variantPrice
   addToCart: (
     product: any, 
     quantity: number, 
     size: string, 
     color: { name: string; hex: string }, 
     variantImage?: string, 
-    variantPrice?: number // <--- Add this!
+    variantPrice?: number,
+    variantStock?: number 
   ) => void;
   removeFromCart: (id: string) => void;
   updateQuantity: (id: string, delta: number) => void;
@@ -43,44 +44,44 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     localStorage.setItem('gtd_cart', JSON.stringify(cartItems));
   }, [cartItems]);
 
-// Inside CartProvider in CartContext.tsx
+  const addToCart = (
+    product: any, 
+    quantity: number, 
+    size: string, 
+    color: { name: string; hex: string; id?: any },
+    variantImage?: string,
+    variantPrice?: number,
+    variantStock?: number
+  ) => {
+    setCartItems((prev) => {
+      const variantId = `${product.id}-${color.name}-${size}`;
+      const existingItem = prev.find((item) => item.id === variantId);
 
-const addToCart = (
-  product: any, 
-  quantity: number, 
-  size: string, 
-  color: { name: string; hex: string; id?: any },
-  variantImage?: string,
-  variantPrice?: number // <--- Make sure this has the '?' so it's optional
-) => {
-  setCartItems((prev) => {
-    const variantId = `${product.id}-${color.name}-${size}`;
-    const existingItem = prev.find((item) => item.id === variantId);
+      if (existingItem) {
+        return prev.map((item) =>
+          item.id === variantId ? { ...item, quantity: item.quantity + quantity } : item
+        );
+      }
 
-    if (existingItem) {
-      return prev.map((item) =>
-        item.id === variantId ? { ...item, quantity: item.quantity + quantity } : item
-      );
-    }
+      const isWatchBuy = product.product_type === 'WATCH_BUY' || !!product.video_url || !!product.video_file;
 
-    const isWatchBuy = product.product_type === 'WATCH_BUY' || !!product.video_url || !!product.video_file;
-
-    const newItem: CartItem = {
-      id: variantId,
-      productId: product.id,
-      name: product.name || product.title,
-      // Use the variantPrice if we have it, otherwise fallback to the product base price
-      price: variantPrice !== undefined ? Number(variantPrice) : Number(product.price),
-      image: variantImage || product.thumbnail || (product.images?.[0]?.url || product.images?.[0] || ''),
-      quantity,
-      selectedSize: size,
-      selectedColor: color,
-      slug: product.slug,
-      product_type: isWatchBuy ? 'WATCH_BUY' : 'REGULAR'
-    };
-    return [...prev, newItem];
-  });
-};
+      const newItem: CartItem = {
+        id: variantId,
+        productId: product.id,
+        name: product.name || product.title,
+        price: variantPrice !== undefined ? Number(variantPrice) : Number(product.price),
+        // 🔥 FIX: Safety fallback. If variantStock is undefined, use 99 as a placeholder or product.stock
+        stock: variantStock !== undefined ? variantStock : (product.stock || 10),
+        image: variantImage || product.thumbnail || (product.images?.[0]?.url || product.images?.[0] || ''),
+        quantity,
+        selectedSize: size,
+        selectedColor: color,
+        slug: product.slug,
+        product_type: isWatchBuy ? 'WATCH_BUY' : 'REGULAR'
+      };
+      return [...prev, newItem];
+    });
+  };
 
   const removeFromCart = (id: string) => {
     setCartItems((prev) => prev.filter((item) => item.id !== id));

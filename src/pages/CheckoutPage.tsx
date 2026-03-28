@@ -116,28 +116,39 @@ const CheckoutPage = () => {
     fetchLocation();
   }, [address.pincode]);
 
-  useEffect(() => {
-    const init = async () => {
-      try {
-        const [addrData, configData] = await Promise.all([
-          authService.getSavedAddresses().catch(() => []),
-          storeService.getSiteConfig().catch(() => null)
-        ]);
-        
-        const list = Array.isArray(addrData) ? addrData : addrData.results || [];
-        setSavedAddresses(list);
-        if (configData) setConfig(configData);
-        
-        const defaultAddr = list.find((a: any) => a.is_default);
-        if (defaultAddr) handleSelectAddress(defaultAddr);
-      } catch (error) {
-        console.error("Initialization error", error);
-      } finally {
-        setLoadingInitial(false);
-      }
-    };
-    init();
-  }, []);
+useEffect(() => {
+    const init = async () => {
+      try {
+        // Check if user is authenticated first
+        const token = localStorage.getItem('userToken'); // or your specific token key
+        if (!token) {
+          toast.error("Login Required", {
+            description: "Please login to place your order."
+          });
+          // Pass the current path in state so Login page can redirect back here
+          navigate('/login', { state: { from: location.pathname } });
+          return;
+        }
+
+        const [addrData, configData] = await Promise.all([
+          authService.getSavedAddresses().catch(() => []),
+          storeService.getSiteConfig().catch(() => null)
+        ]);
+        
+        const list = Array.isArray(addrData) ? addrData : addrData.results || [];
+        setSavedAddresses(list);
+        if (configData) setConfig(configData);
+        
+        const defaultAddr = list.find((a: any) => a.is_default);
+        if (defaultAddr) handleSelectAddress(defaultAddr);
+      } catch (error) {
+        console.error("Initialization error", error);
+      } finally {
+        setLoadingInitial(false);
+      }
+    };
+    init();
+  }, [navigate, location.pathname]);
 
   const totals = useMemo(() => {
     const sub = Number(checkoutSubtotal) || 0;
@@ -219,7 +230,7 @@ const CheckoutPage = () => {
     }
   };
 
-  const handlePayment = async () => {
+const handlePayment = async () => {
     setHasAttemptedPay(true);
 
     if (address.pincode.length !== 6 || !isIndianPincode || !address.state) {
@@ -230,11 +241,21 @@ const CheckoutPage = () => {
         return;
     }
 
+    // 1. Check for basic mandatory fields first
     const isValid = validateForm();
     if (!isValid) {
-      toast.error("Required Fields Missing", {
-        description: "Please fill in all mandatory fields highlighted in red."
-      });
+      // 2. Check specifically if phone was the reason for failure
+      const phoneRegex = /^[0-9]{10}$/;
+      if (address.phone && !phoneRegex.test(address.phone)) {
+        toast.error("Invalid Phone Number", {
+          description: "Please enter a valid 10-digit phone number."
+        });
+      } else {
+        toast.error("Required Fields Missing", {
+          description: "Please fill in all mandatory fields highlighted in red."
+        });
+      }
+      
       window.scrollTo({ top: 200, behavior: 'smooth' });
       return;
     }

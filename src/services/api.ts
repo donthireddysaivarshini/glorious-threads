@@ -21,7 +21,10 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       const isLoginRequest = error.config.url.includes('/auth/login') || error.config.url.includes('/auth/google');
       // NEW: Don't redirect for public store data
-      const isPublicRequest = error.config.url.includes('/store/') || error.config.url.includes('/content/');
+      const isPublicRequest = 
+  error.config.url.includes('/store/') || 
+  error.config.url.includes('/content/') ||
+  error.config.url.includes('/watch-and-buy/');
       
       if (!isLoginRequest && !isPublicRequest) {
         localStorage.removeItem('userToken');

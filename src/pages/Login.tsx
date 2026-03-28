@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom"; // Added useLocation
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useGoogleLogin } from '@react-oauth/google';
@@ -9,6 +9,11 @@ import { Button } from "@/components/ui/button";
 
 export default function Login() {
   const navigate = useNavigate();
+  const location = useLocation(); // Initialize useLocation
+  
+  // Get the redirect path from state, or default to profile
+  const from = location.state?.from || "/profile";
+
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -16,12 +21,13 @@ export default function Login() {
   
   const [formData, setFormData] = useState({ fullName: '', email: '', password: '', confirmPassword: '' });
 
-  useEffect(() => {
+useEffect(() => {
     if (localStorage.getItem("userToken")) {
-      navigate("/profile");
+      // Check if there is a 'from' path in the state, otherwise go to profile
+      const from = location.state?.from || "/profile";
+      navigate(from, { replace: true });
     }
-  }, [navigate]);
-
+  }, [navigate, location.state]); // Add location.state to dependencies
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -43,11 +49,10 @@ export default function Login() {
             try {
               await authService.signup({ email: formData.email, password: formData.password, first_name: formData.fullName });
             } catch (signupError: any) {
-              // Handle existing email gracefully
               const errorData = signupError.response?.data || signupError;
               if (JSON.stringify(errorData).toLowerCase().includes("already exists")) {
                 toast.info("Account already exists. Please login instead.");
-                setIsLogin(true); // Switch tab
+                setIsLogin(true); 
                 setIsLoading(false);
                 return;
               }
@@ -58,7 +63,9 @@ export default function Login() {
         
         if (localStorage.getItem("userToken")) {
             toast.success(isLogin ? "Logged in!" : "Welcome to GTD!");
-            navigate("/profile");
+            // Use the dynamic 'from' path instead of static '/profile'
+            const from = location.state?.from || "/profile";
+            navigate(from, { replace: true });
         }
     } catch (error: any) {
         toast.error("Invalid email or password.");
@@ -72,7 +79,8 @@ export default function Login() {
       try {
         setIsLoading(true);
         await authService.googleLogin({ code: tokenResponse.code });
-        setTimeout(() => { navigate("/profile"); }, 100);
+        const from = location.state?.from || "/profile";
+        setTimeout(() => { navigate(from, { replace: true }); }, 100);
       } catch (err) {
         toast.error("Google Login failed.");
       } finally {
@@ -86,7 +94,6 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-[#FFF8F8] py-12 px-4">
       <div className="max-w-md w-full space-y-8 bg-white p-8 md:p-10 rounded-[2.5rem] shadow-xl border border-pink-100">
         <div className="text-center">
-          {/* FIX: Square logo to prevent elongation */}
           <img src={logo} alt="GTD Logo" className="h-20 w-20 mx-auto rounded-full mb-6 border border-pink-50 shadow-sm aspect-square object-contain" />
           <h2 className="text-2xl font-bold text-black uppercase tracking-tight">{isLogin ? "Login" : "Sign Up"}</h2>
           <p className="text-xs text-muted-foreground mt-2">

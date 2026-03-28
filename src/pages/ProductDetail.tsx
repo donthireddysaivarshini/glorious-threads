@@ -12,7 +12,7 @@ import Footer from '@/components/layout/Footer';
 const ProductDetail = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
-  const { addToCart } = useCart();
+  const { addToCart, cartItems } = useCart(); // Destructured cartItems to check existing quantities
   
   const [product, setProduct] = useState<any>(null);
   const [reviews, setReviews] = useState<any[]>([]);
@@ -77,6 +77,19 @@ const ProductDetail = () => {
     return [];
   }, [product, selectedColor]);
 
+  // --- STOCK HELPERS ---
+  const selectedVariant = useMemo(() => {
+    if (!selectedSize || availableSizes.length === 0) return null;
+    return availableSizes.find((s: any) => s.size === selectedSize);
+  }, [selectedSize, availableSizes]);
+
+  const quantityInCart = useMemo(() => {
+    if (!product || !selectedColor || !selectedSize) return 0;
+    const variantId = `${product.id}-${selectedColor.name}-${selectedSize}`;
+    const item = cartItems.find((i: any) => i.id === variantId);
+    return item ? item.quantity : 0;
+  }, [cartItems, product, selectedColor, selectedSize]);
+
   const nextImage = () => {
     setCurrentImage((prev) => (prev + 1) % displayImages.length);
   };
@@ -129,16 +142,23 @@ const ProductDetail = () => {
     }
   };
 
-  const handleAddToCart = (action: 'bag' | 'buy') => {
-    const pinkAlertStyle = { background: '#fdf2f8', color: '#ec4899', border: '1px solid #fbcfe8' };
-
+const handleAddToCart = (action: 'bag' | 'buy') => {
     if (!selectedColor) {
-      toast.error("Please select a color first", { style: pinkAlertStyle });
+      toast.error("Please select a color first"); 
       return;
     }
     if (!selectedSize) {
-      toast.error("Please select a size first", { style: pinkAlertStyle });
+      toast.error("Please select a size first"); 
       return;
+    }
+
+    // --- STOCK VALIDATION ---
+    if (selectedVariant) {
+      const totalRequested = quantity + quantityInCart;
+      if (totalRequested > selectedVariant.stock) {
+        toast.error(`Cannot add more. Only ${selectedVariant.stock} items total allowed (You already have ${quantityInCart} in bag).`);
+        return;
+      }
     }
 
     const variantImage = product.images.find((i: any) => 
@@ -154,11 +174,12 @@ const ProductDetail = () => {
         quantity: quantity,
         selectedSize: selectedSize,
         selectedColor: selectedColor,
-        image: variantImage
+        image: variantImage,
+        stock: selectedVariant?.stock
       };
       navigate('/checkout', { state: { directItem: [directItem] } });
     } else {
-      addToCart(product, quantity, selectedSize, selectedColor, variantImage, displayPrice);
+      addToCart(product, quantity, selectedSize, selectedColor, variantImage, displayPrice,selectedVariant?.stock);
       toast.success("Added to bag");
     }
   };
@@ -234,16 +255,16 @@ const ProductDetail = () => {
                   {displayOriginalPrice > 0 && (
                     <>
                       <span className="text-lg text-zinc-300 line-through">₹{displayOriginalPrice}</span>
-      <span className="text-pink-500 font-extrabold text-sm uppercase">
-        ₹{Math.floor(displayOriginalPrice - displayPrice)} OFF
-      </span>
-    </>
+                      <span className="text-pink-500 font-extrabold text-sm uppercase">
+                        ₹{Math.floor(displayOriginalPrice - displayPrice)} OFF
+                      </span>
+                    </>
                   )}
                 </div>
                 <p className="text-[10px] font-bold text-zinc-400 uppercase mt-2 tracking-widest">Inclusive of all taxes</p>
               </div>
 
-              {/* COLOR SECTION - UPDATED TO LARGER CIRCLE IMAGE PREVIEWS */}
+              {/* COLOR SECTION */}
               <div className="mb-8">
                 <span className="text-[11px] font-bold uppercase tracking-widest text-zinc-700 block mb-4">
                     Select Color {selectedColor ? `: ${selectedColor.name}` : '(Required)'}
@@ -287,12 +308,28 @@ const ProductDetail = () => {
                 </div>
               </div>
 
+              {/* QUANTITY SECTION WITH STOCK VALIDATION */}
               <div className="mb-10">
-                <span className="text-[11px] font-bold uppercase tracking-widest text-zinc-700 block mb-4">Quantity</span>
+                <span className="text-[11px] font-bold uppercase tracking-widest text-zinc-700 block mb-4">
+                  Quantity {selectedVariant ? `(Only ${selectedVariant.stock} available)` : ''}
+                </span>
                 <div className="flex items-center w-fit border-2 border-zinc-100 bg-zinc-50/50">
                   <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="px-4 py-3 hover:bg-zinc-100 border-r border-zinc-100"><Minus size={14}/></button>
                   <span className="px-8 font-extrabold text-sm">{quantity}</span>
-                  <button onClick={() => setQuantity(quantity + 1)} className="px-4 py-3 hover:bg-zinc-100 border-l border-zinc-100"><Plus size={14}/></button>
+                  <button 
+                    onClick={() => {
+                      if (selectedVariant && (quantity + quantityInCart) < selectedVariant.stock) {
+                        setQuantity(quantity + 1);
+                      } else if (selectedVariant) {
+                        toast.error(`Stock limit reached. Only ${selectedVariant.stock} items available.`);
+                      } else {
+                        toast.error("Please select a size first");
+                      }
+                    }} 
+                    className="px-4 py-3 hover:bg-zinc-100 border-l border-zinc-100"
+                  >
+                    <Plus size={14}/>
+                  </button>
                 </div>
               </div>
 

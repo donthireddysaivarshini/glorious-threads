@@ -283,7 +283,7 @@ const formatToIST = (dateString: string) => {
     {/* NEW: TRACKING NOTE DISPLAY */}
     {order.tracking_note && order.order_status !== 'Cancelled' && (
         <div className="mt-1 bg-zinc-100 p-2 rounded-lg border border-zinc-200 max-w-[200px] text-left">
-            <p className="text-[9px] font-bold text-zinc-400 uppercase leading-tight">Tracking Note</p>
+            <p className="text-[9px] font-bold text-zinc-400 uppercase leading-tight">Tracking Info</p>
             <p className="text-[10px] font-medium text-zinc-700 break-words">{order.tracking_note}</p>
         </div>
     )}

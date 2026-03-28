@@ -3,6 +3,7 @@ import { useCart } from "@/context/CartContext";
 import { Minus, Plus, Trash2, ArrowRight, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 export const CartDrawer = ({ open, setOpen }: { open: boolean, setOpen: (o: boolean) => void }) => {
   const { cartItems, updateQuantity, removeFromCart, subtotal } = useCart();
@@ -48,7 +49,16 @@ export const CartDrawer = ({ open, setOpen }: { open: boolean, setOpen: (o: bool
                         {item.quantity === 1 ? <Trash2 size={12} className="text-red-400" /> : <Minus size={12} />}
                       </button>
                       <span className="text-[10px] font-black w-6 text-center">{item.quantity}</span>
-                      <button onClick={() => updateQuantity(item.id, 1)} className="p-2 hover:text-primary transition-colors">
+                      <button 
+                        onClick={() => {
+                          if (item.quantity < item.stock) {
+                            updateQuantity(item.id, 1);
+                          } else {
+                            toast.error(`Stock limit reached. Only ${item.stock} available.`);
+                          }
+                        }} 
+                        className="p-2 hover:text-primary transition-colors"
+                      >
                         <Plus size={12} />
                       </button>
                     </div>
